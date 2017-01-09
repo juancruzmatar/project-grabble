@@ -1,6 +1,8 @@
 package com.s1451552.grabble;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.design.widget.TabLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -10,9 +12,24 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static com.s1451552.grabble.MainActivity.LETTER_COUNT;
+import static com.s1451552.grabble.MainActivity.WORD_COUNT;
+import static com.s1451552.grabble.MainActivity.letter_list;
+import static com.s1451552.grabble.MainActivity.preferences;
+import static com.s1451552.grabble.MainActivity.word_list;
+
 public class BackpackActivity extends AppCompatActivity {
+
+    SharedPreferences grabblePref;
+    SharedPreferences letterlistPref;
+    SharedPreferences wordlistPref;
 
     private ActionBar mActionBar;
     /**
@@ -35,11 +52,28 @@ public class BackpackActivity extends AppCompatActivity {
      */
     private ViewPager mViewPager;
 
+    private int mLetterCount;
+    private int mWordCount;
+
+    private ArrayList<String> mLetters;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_backpack);
+
+        grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
+        letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
+        wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
+
+        mLetterCount = grabblePref.getInt(LETTER_COUNT, 0);
+        mWordCount = grabblePref.getInt(WORD_COUNT, 0);
+
+        Collection values = letterlistPref.getAll().values();
+        mLetters = new ArrayList<>(values);
+
+        Log.d("LOLOL", mLetters.toString());
 
         mActionBar = getSupportActionBar();
         if (mActionBar != null) {
@@ -83,11 +117,11 @@ public class BackpackActivity extends AppCompatActivity {
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    return LetterBagFragment.newInstance("Letter Bag Fragment");
+                    return LetterBagFragment.newInstance(mLetters);
                 case 1:
                     return WordBagFragment.newInstance("Word Bag Fragment");
                 default:
-                    return LetterBagFragment.newInstance("Letter Bag Fragment");
+                    return LetterBagFragment.newInstance(mLetters);
             }
         }
 
@@ -101,7 +135,7 @@ public class BackpackActivity extends AppCompatActivity {
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return "Letter Bag";
+                    return ("Letter Bag (" + mLetterCount + ")");
                 case 1:
                     return "Word Bag";
             }

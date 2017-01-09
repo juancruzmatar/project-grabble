@@ -1,4 +1,5 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,38 +14,102 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center">
+        android:weightSum="12">
 
         <GridView
-            android:id="@+id/grid"
+            android:id="@+id/letter_grid"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:numColumns="6">
+            android:layout_height="340dp"
+            android:layout_marginBottom="15dp"
+            android:layout_weight="7"
+            android:numColumns="7"
+            android:gravity="top">
         </GridView>
 
         <LinearLayout
+            android:id="@+id/make_word"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_weight="4"
             android:orientation="horizontal"
-            android:weightSum="4">
+            android:weightSum="7">
 
-            <EditText
-                android:id="@+id/letter_box"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:layout_gravity="bottom"
-                android:layout_weight="3"/>
-
-            <Button
+            <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView7"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView6"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView5"
                 android:layout_weight="1"
-                android:backgroundTint="@color/accent"
-                android:background="@drawable/shape_btn"
-                android:text="Make It!" />
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView4"
+                android:layout_weight="1"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView3"
+                android:layout_weight="1"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView2"
+                android:layout_weight="1"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@android:drawable/alert_light_frame"
+                android:id="@+id/imageView"
+                android:layout_weight="1"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:layout_gravity="bottom" />
         </LinearLayout>
 
-    </LinearLayout>
+        <Button
+            android:text="Grabble it!"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/button2" />
 
+    </LinearLayout>
 
 </RelativeLayout>

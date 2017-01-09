@@ -22,7 +22,7 @@ import static com.s1451552.grabble.MainActivity.sOldLocation;
 
 public class StatisticsActivity extends AppCompatActivity {
 
-    SharedPreferences sharedPref;
+    SharedPreferences grabblePref;
 
     private ActionBar mActionBar;
     private NumberFormat mDecFormatter;
@@ -36,33 +36,35 @@ public class StatisticsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Getting stored preferences
-        sharedPref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
+        grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
         storeDistance();
 
         setContentView(R.layout.activity_statistics);
 
-        TextView tDistance = (TextView) findViewById(R.id.travel_distance_var);
+        TextView txtDistance = (TextView) findViewById(R.id.travel_distance_var);
+        TextView txtLetters = (TextView) findViewById(R.id.letter_number_var);
+        TextView txtWords = (TextView) findViewById(R.id.word_number_var);
 
         mDecFormatter = NumberFormat.getNumberInstance();
         mDecFormatter.setMinimumFractionDigits(2);
         mDecFormatter.setMaximumFractionDigits(2);
 
-        if (sharedPref.contains(TRAVEL_DISTANCE)) {
-            float distance = sharedPref.getInt(TRAVEL_DISTANCE, -1);
+        if (grabblePref.contains(TRAVEL_DISTANCE)) {
+            float distance = grabblePref.getInt(TRAVEL_DISTANCE, -1);
             if (distance != 0.0)
                 if (distance < 1000) {
-                    tDistance.setText(String.valueOf(distance) + " meters");
+                    txtDistance.setText(String.valueOf(distance) + " meters");
                 } else {
                     distance = distance / 1000;
                     String sDistance = mDecFormatter.format(distance);
-                    tDistance.setText(sDistance + " km");
+                    txtDistance.setText(sDistance + " km");
                 }
         }
-        if (sharedPref.contains(LETTER_COUNT)) {
-            tDistance.setText(String.valueOf(sharedPref.getInt(LETTER_COUNT, -1)));
+        if (grabblePref.contains(LETTER_COUNT)) {
+            txtLetters.setText(String.valueOf(grabblePref.getInt(LETTER_COUNT, -1)));
         }
-        if (sharedPref.contains(WORD_COUNT)) {
-            tDistance.setText(String.valueOf(sharedPref.getInt(WORD_COUNT, -1)));
+        if (grabblePref.contains(WORD_COUNT)) {
+            txtWords.setText(String.valueOf(grabblePref.getInt(WORD_COUNT, -1)));
         }
 
         mActionBar = getSupportActionBar();
@@ -85,12 +87,12 @@ public class StatisticsActivity extends AppCompatActivity {
     private void storeDistance() {
         if (sOldLocation != null) {
             int distance = (int) sLastLocation.distanceTo(sOldLocation);
-            if (sharedPref.contains(TRAVEL_DISTANCE)) {
-                int old = sharedPref.getInt(TRAVEL_DISTANCE, DOESNT_EXIST);
+            if (grabblePref.contains(TRAVEL_DISTANCE)) {
+                int old = grabblePref.getInt(TRAVEL_DISTANCE, DOESNT_EXIST);
                 distance = distance + old;
-                sharedPref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
+                grabblePref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
             } else {
-                sharedPref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
+                grabblePref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
             }
         }
     }

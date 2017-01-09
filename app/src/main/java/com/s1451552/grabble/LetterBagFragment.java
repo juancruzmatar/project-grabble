@@ -1,13 +1,19 @@
 package com.s1451552.grabble;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Letter Bag fragment for BackpackActivity
@@ -27,13 +33,13 @@ public class LetterBagFragment extends Fragment {
      * Returns a new instance of this fragment for the given section
      * number.
      */
-    public static LetterBagFragment newInstance(String text) {
+    public static LetterBagFragment newInstance(ArrayList<String> letters) {
         LetterBagFragment fragment = new LetterBagFragment();
 
         // Passing data from the new instance
-        //Bundle bundle = new Bundle();
-        //bundle.putString("msg", text);
-        //fragment.setArguments(bundle);
+        Bundle bundle = new Bundle();
+        bundle.putStringArrayList("letters", letters);
+        fragment.setArguments(bundle);
 
         return fragment;
     }
@@ -43,22 +49,18 @@ public class LetterBagFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_letterbag, container, false);
 
-        mGridView = (GridView) rootView.findViewById(R.id.grid);
-        mGridAdapter = new LetterViewAdapter(getActivity(), R.layout.layout_griditem, getData());
+        final ArrayList<String> letters = getArguments().getStringArrayList("letters");
+
+        mGridView = (GridView) rootView.findViewById(R.id.letter_grid);
+        mGridAdapter = new LetterViewAdapter(getActivity(), R.layout.layout_griditem, letters);
         mGridView.setAdapter(mGridAdapter);
 
+        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            }
+        });
 
-        //TextView textView = (TextView) rootView.findViewById(R.id.section_letterbag);
-        //textView.setText(getArguments().getString("msg"));
         return rootView;
-    }
-
-    // Prepare some dummy data for gridview
-    private ArrayList<String> getData() {
-        final ArrayList<String> imageItems = new ArrayList<>();
-        for (int i = 65; i <= 90; i++) {
-            imageItems.add(String.valueOf((char)i));
-        }
-        return imageItems;
     }
 }

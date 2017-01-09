@@ -88,16 +88,23 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private static final int REQUEST_PERMISSIONS = 20;
+    public static String PACKAGE_NAME;
 
-    SharedPreferences sharedPref;
-    public static final String preferences = "com.s1451552.grabble";
-    public static final String gameplay_pref = "com.s1451552.grabble.gameplay";
+    SharedPreferences grabblePref;
+    SharedPreferences letterlistPref;
+    SharedPreferences wordlistPref;
 
+    /* Main preferences */
     public static final int DOESNT_EXIST = -1;
+    public static final String preferences = "grabble.preferences";
     public static final String PREF_VERSION_CODE_KEY = "version_code";
     public static final String TRAVEL_DISTANCE = "travel_distance";
     public static final String LETTER_COUNT = "letter_count";
     public static final String WORD_COUNT = "word_count";
+
+    /* Gameplay data (letters, words, etc) */
+    public static final String letter_list = "grabble.letterlist";
+    public static final String word_list = "grabble.wordlist";
 
     private MapView mapView;
     private NavigationView mNavigationView;
@@ -128,7 +135,11 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         MapboxAccountManager.start(this, getString(R.string.access_token));
 
         // Getting stored preferences
-        sharedPref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
+        grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
+        letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
+        wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
+
+        PACKAGE_NAME = getApplicationContext().getPackageName();
 
         // Init Nav Box night icon 'isChecked' value
         isNight = false;
@@ -442,12 +453,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             case Calendar.SUNDAY: txtWeekday = "sunday"; break;
         }
 
-        String storedValue = sharedPref.getString(PREF_WEEKDAY_KEY, DOESNT_EXIST);
+        String storedValue = grabblePref.getString(PREF_WEEKDAY_KEY, DOESNT_EXIST);
 
         Log.d("storeCurrentWeekday", ("STORED: " + storedValue + ", NEW: " + txtWeekday));
 
         if (!storedValue.equals(txtWeekday)) {
-            SharedPreferences.Editor editor = sharedPref.edit();
+            SharedPreferences.Editor editor = grabblePref.edit();
             editor.putString(PREF_WEEKDAY_KEY, txtWeekday);
             editor.apply();
             return txtWeekday;
@@ -504,6 +515,20 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                             mParsedMarkers.remove(marker);
                             mParsedMarkersRaw.remove(markerAtIndex);
                             map.removeMarker(marker);
+
+                            Long tsLong = System.currentTimeMillis()/1000;
+                            String ts = tsLong.toString();
+
+                            letterlistPref.edit().putString(ts, marker.getTitle()).apply();
+
+                            int count;
+                            if (letterlistPref.getAll() != null) {
+                                count = letterlistPref.getAll().size();
+                            } else {
+                                count = 1;
+                            }
+                            grabblePref.edit().putInt(LETTER_COUNT, count).apply();
+
                         } else {
                             Log.e("onMarkerClickListener", "No such marker in the array!");
                         }
@@ -544,7 +569,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             });
         } else {
             // Points to the cached day and letter map
-            final String currentDay = sharedPref.getString("weekday", "empty");
+            final String currentDay = grabblePref.getString("weekday", "empty");
             final File letterMap = new File(getExternalFilesDir(null), "map.grabble");
 
             if (letterMap.exists()) {
@@ -831,7 +856,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         }
 
         // Get saved version code
-        int savedVersionCode = sharedPref.getInt(PREF_VERSION_CODE_KEY, DOESNT_EXIST);
+        int savedVersionCode = grabblePref.getInt(PREF_VERSION_CODE_KEY, DOESNT_EXIST);
 
         // Check for first run or upgrade
         if (currentVersionCode == savedVersionCode) {
@@ -843,14 +868,14 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
             // This is a new install (or the user cleared the shared preferences),
             // update the shared preferences with the current version code
-            sharedPref.edit().putInt(PREF_VERSION_CODE_KEY, currentVersionCode).apply();
+            grabblePref.edit().putInt(PREF_VERSION_CODE_KEY, currentVersionCode).apply();
             return 1;
 
         } else if (currentVersionCode > savedVersionCode) {
 
             // This is an upgrade, update the shared preferences
             // with the current version code
-            sharedPref.edit().putInt(PREF_VERSION_CODE_KEY, currentVersionCode).apply();
+            grabblePref.edit().putInt(PREF_VERSION_CODE_KEY, currentVersionCode).apply();
             return 2;
         }
 

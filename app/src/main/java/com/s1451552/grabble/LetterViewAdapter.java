@@ -49,11 +49,12 @@ public class LetterViewAdapter extends ArrayAdapter {
         String points = context.getResources().getString(leId);
 
         String resource = "letter_" + data.get(position).toLowerCase();
-        int imId = context.getResources().getIdentifier(resource, "drawable", context.getPackageName());
+        int imId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
         Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imId);
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
 
-        holder.imageTitle.setText(points);
+        holder.imageTitle.setText("(" + points + ")");
+        holder.imageTitle.setTextSize(20);
         holder.image.setImageBitmap(scaled);
         return row;
     }
