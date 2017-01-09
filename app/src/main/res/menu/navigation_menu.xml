@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group
+        android:checkableBehavior="none">
+        <item
+            android:id="@+id/nav_backpack"
+            android:icon="@drawable/ic_letter_black_24dp"
+            android:title="Backpack" />
+        <item
+            android:id="@+id/nav_statistics"
+            android:icon="@drawable/ic_scores_black_24dp"
+            android:title="Statistics" />
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_settings_black_24dp"
+            android:title="Settings" />
+        <item
+            android:id="@+id/nav_night"
+            android:icon="@drawable/ic_moon_black_24dp"
+            android:title="Toggle Night Mode" />
+    </group>
+</menu>

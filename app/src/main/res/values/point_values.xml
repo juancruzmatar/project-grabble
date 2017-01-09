@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="A">3</string>
+    <string name="B">20</string>
+    <string name="C">13</string>
+    <string name="D">10</string>
+    <string name="E">1</string>
+    <string name="F">15</string>
+    <string name="G">18</string>
+    <string name="H">9</string>
+    <string name="I">5</string>
+    <string name="J">25</string>
+    <string name="K">22</string>
+    <string name="L">11</string>
+    <string name="M">14</string>
+    <string name="N">6</string>
+    <string name="O">4</string>
+    <string name="P">19</string>
+    <string name="Q">24</string>
+    <string name="R">8</string>
+    <string name="S">7</string>
+    <string name="T">2</string>
+    <string name="U">12</string>
+    <string name="V">21</string>
+    <string name="W">17</string>
+    <string name="X">23</string>
+    <string name="Y">16</string>
+    <string name="Z">26</string>
+</resources>
