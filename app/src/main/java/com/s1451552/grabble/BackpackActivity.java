@@ -17,7 +17,6 @@ import android.view.MenuItem;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import static com.s1451552.grabble.MainActivity.LETTER_COUNT;
 import static com.s1451552.grabble.MainActivity.WORD_COUNT;
@@ -72,8 +71,6 @@ public class BackpackActivity extends AppCompatActivity {
 
         Collection values = letterlistPref.getAll().values();
         mLetters = new ArrayList<>(values);
-
-        Log.d("LOLOL", mLetters.toString());
 
         mActionBar = getSupportActionBar();
         if (mActionBar != null) {

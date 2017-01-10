@@ -34,69 +34,127 @@
             android:orientation="horizontal"
             android:weightSum="7">
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="bottom"
                 android:layout_marginEnd="3dp"
                 android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
+                android:layout_weight="1">
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:layout_marginEnd="3dp"
-                android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
+                <ImageView
+                    android:id="@+id/letter_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="bottom"
                 android:layout_marginEnd="3dp"
                 android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
+                android:layout_weight="1">
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:layout_marginEnd="3dp"
-                android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:layout_marginEnd="3dp"
-                android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
+                <ImageView
+                    android:id="@+id/letter_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="bottom"
                 android:layout_marginEnd="3dp"
                 android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
+                android:layout_weight="1">
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                <ImageView
+                    android:id="@+id/letter_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="bottom"
                 android:layout_marginEnd="3dp"
                 android:background="@drawable/shape_rectangle"
-                android:layout_weight="1"/>
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/letter_4"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:layout_marginEnd="3dp"
+                android:background="@drawable/shape_rectangle"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/letter_5"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:layout_marginEnd="3dp"
+                android:background="@drawable/shape_rectangle"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/letter_6"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:layout_marginEnd="3dp"
+                android:background="@drawable/shape_rectangle"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/letter_7"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cropToPadding="false"
+                    android:layout_margin="@dimen/letter_box_margin" />
+            </FrameLayout>
+
         </LinearLayout>
 
         <Button
-            android:text="Grabble it!"
+            android:text="@string/btn_make_word"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_weight="2"
-            android:id="@+id/button2" />
+            android:id="@+id/btn_grabble" />
 
     </LinearLayout>
 

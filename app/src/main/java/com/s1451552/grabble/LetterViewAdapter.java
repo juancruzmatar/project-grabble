@@ -54,7 +54,7 @@ public class LetterViewAdapter extends ArrayAdapter {
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
 
         holder.imageTitle.setText("(" + points + ")");
-        holder.imageTitle.setTextSize(20);
+        holder.imageTitle.setTextSize(18);
         holder.image.setImageBitmap(scaled);
         return row;
     }

@@ -14,6 +14,9 @@
     <string name="title_activity_backpack">Backpack</string>
     <string name="title_activity_statistics">Statistics</string>
 
+    <!-- Backpack -->
+    <string name="btn_make_word">Grabble it!</string>
+
     <!-- Statistics -->
     <string name="stats_travel_distance">Total distance of travel:</string>
     <string name="stats_letter_number">Total letters collected:</string>
