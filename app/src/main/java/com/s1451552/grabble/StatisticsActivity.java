@@ -11,18 +11,16 @@ import android.widget.TextView;
 
 import java.text.NumberFormat;
 
-import static com.s1451552.grabble.MainActivity.DOESNT_EXIST;
 import static com.s1451552.grabble.MainActivity.LETTER_COUNT;
 import static com.s1451552.grabble.MainActivity.TRAVEL_DISTANCE;
 import static com.s1451552.grabble.MainActivity.WORD_COUNT;
+import static com.s1451552.grabble.MainActivity.HIGHSCORE;
 import static com.s1451552.grabble.MainActivity.preferences;
-
-import static com.s1451552.grabble.MainActivity.sLastLocation;
-import static com.s1451552.grabble.MainActivity.sOldLocation;
 
 public class StatisticsActivity extends AppCompatActivity {
 
     SharedPreferences grabblePref;
+    SharedPreferences highscorePref;
 
     private ActionBar mActionBar;
     private NumberFormat mDecFormatter;
@@ -37,13 +35,13 @@ public class StatisticsActivity extends AppCompatActivity {
 
         // Getting stored preferences
         grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
-        storeDistance();
 
         setContentView(R.layout.activity_statistics);
 
         TextView txtDistance = (TextView) findViewById(R.id.travel_distance_var);
         TextView txtLetters = (TextView) findViewById(R.id.letter_number_var);
         TextView txtWords = (TextView) findViewById(R.id.word_number_var);
+        TextView txtHighscore = (TextView) findViewById(R.id.highscore_var);
 
         mDecFormatter = NumberFormat.getNumberInstance();
         mDecFormatter.setMinimumFractionDigits(2);
@@ -66,6 +64,9 @@ public class StatisticsActivity extends AppCompatActivity {
         if (grabblePref.contains(WORD_COUNT)) {
             txtWords.setText(String.valueOf(grabblePref.getInt(WORD_COUNT, -1)));
         }
+        if (grabblePref.contains(HIGHSCORE)) {
+            txtHighscore.setText(String.valueOf(grabblePref.getInt(HIGHSCORE, -1)));
+        }
 
         mActionBar = getSupportActionBar();
         if (mActionBar != null) {
@@ -82,18 +83,5 @@ public class StatisticsActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private void storeDistance() {
-        if (sOldLocation != null) {
-            int distance = (int) sLastLocation.distanceTo(sOldLocation);
-            if (grabblePref.contains(TRAVEL_DISTANCE)) {
-                int old = grabblePref.getInt(TRAVEL_DISTANCE, DOESNT_EXIST);
-                distance = distance + old;
-                grabblePref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
-            } else {
-                grabblePref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
-            }
-        }
     }
 }

@@ -69,6 +69,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Set;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -96,15 +97,16 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
     /* Main preferences */
     public static final int DOESNT_EXIST = -1;
-    public static final String preferences = "grabble.preferences";
+    public static final String preferences = "grabble_preferences";
     public static final String PREF_VERSION_CODE_KEY = "version_code";
     public static final String TRAVEL_DISTANCE = "travel_distance";
     public static final String LETTER_COUNT = "letter_count";
     public static final String WORD_COUNT = "word_count";
+    public static final String HIGHSCORE = "highscore";
 
     /* Gameplay data (letters, words, etc) */
-    public static final String letter_list = "grabble.letterlist";
-    public static final String word_list = "grabble.wordlist";
+    public static final String letter_list = "grabble_letterlist";
+    public static final String word_list = "grabble_wordlist";
 
     private MapView mapView;
     private NavigationView mNavigationView;
@@ -117,15 +119,14 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private boolean isNight;
     private CameraPosition position;
 
-    public static Location sLastLocation;
-    public static Location sOldLocation;
+    Location mLastLocation;
+    Location mOldLocation;
 
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private ArrayList<MarkerViewOptions> mParsedMarkersRaw;
     private ArrayList<Marker> mParsedMarkers;
     private ArrayList<Marker> mLettersAround;
-    private ArrayList<Letter> mLetterMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -251,7 +252,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
 
-        mLetterMap = new ArrayList<>();
         mLettersAround = new ArrayList<>();
         mParsedMarkers = new ArrayList<>();
         mParsedMarkersRaw = new ArrayList<>();
@@ -368,18 +368,18 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
 
-            sLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                     mGoogleApiClient);
-            sOldLocation = sLastLocation;
+            mOldLocation = mLastLocation;
 
-            if (sLastLocation != null) {
+            if (mLastLocation != null) {
                 if (map != null) {
                     position = new CameraPosition.Builder()
-                            .target(new LatLng(sLastLocation))
+                            .target(new LatLng(mLastLocation))
                             .zoom(20)
                             .build();
                     map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
-                    displayClosestLetters(sLastLocation);
+                    displayClosestLetters(mLastLocation);
                 }
             }
         } else {
@@ -395,8 +395,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
     @Override
     public void onLocationChanged(Location location) {
-        sOldLocation = sLastLocation;
-        sLastLocation = location;
+        mOldLocation = mLastLocation;
+        mLastLocation = location;
 
         if (location != null) {
             if (map != null) {
@@ -405,6 +405,16 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         .build();
                 map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
                 displayClosestLetters(location);
+            }
+            if (mOldLocation != null) {
+                int distance = (int) mLastLocation.distanceTo(mOldLocation);
+                if (grabblePref.contains(TRAVEL_DISTANCE)) {
+                    int old = grabblePref.getInt(TRAVEL_DISTANCE, DOESNT_EXIST);
+                    distance = distance + old;
+                    grabblePref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
+                } else {
+                    grabblePref.edit().putInt(TRAVEL_DISTANCE, distance).apply();
+                }
             }
         }
     }
@@ -516,10 +526,22 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                             mParsedMarkersRaw.remove(markerAtIndex);
                             map.removeMarker(marker);
 
-                            Long tsLong = System.currentTimeMillis()/1000;
-                            String ts = tsLong.toString();
+                            // Do we need to store date for the letters acquired?
+                            // Long tsLong = System.currentTimeMillis()/1000;
+                            // String ts = tsLong.toString();
 
-                            letterlistPref.edit().putString(ts, marker.getTitle()).apply();
+                            SharedPreferences.Editor editor = letterlistPref.edit();
+
+                            int currentCount = letterlistPref.getInt(marker.getTitle(), -1);
+                            if (currentCount != -1) {
+                                currentCount = currentCount + 1;
+                                editor.remove(marker.getTitle()).apply();
+                                editor.putInt(marker.getTitle(), currentCount).apply();
+                            } else {
+                                editor.putInt(marker.getTitle(), 1).apply();
+                            }
+
+                            Log.d("onMarkerClickListener", String.valueOf(currentCount));
 
                             int count;
                             if (letterlistPref.getAll() != null) {
@@ -823,7 +845,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 Marker marker = mParsedMarkers.get(markerAtIndex);
                 markerAtIndex++;
 
-                if (currentPos.distanceTo(m.getPosition()) <= 8) {
+                if (currentPos.distanceTo(m.getPosition()) <= 10) {
                     if (mParsedMarkersRaw != null &&
                             !mLettersAround.contains(marker)) {
                         Log.d(TAG, "Spawning letter: " + m.getTitle()

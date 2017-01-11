@@ -21,9 +21,12 @@
     <string name="stats_travel_distance">Total distance of travel:</string>
     <string name="stats_letter_number">Total letters collected:</string>
     <string name="stats_word_number">Total words formed:</string>
+    <string name="stats_highscore">High score:</string>
+
     <string name="stats_travel_distance_var">Haven\'t travelled yet!</string>
     <string name="stats_letter_number_var">No letters collected yet!</string>
     <string name="stats_word_number_var">No words collected yet!</string>
+    <string name="stats_highscore_var">No score yet!</string>
 
     <!-- Settings -->
     <string name="pref_header_general">General</string>

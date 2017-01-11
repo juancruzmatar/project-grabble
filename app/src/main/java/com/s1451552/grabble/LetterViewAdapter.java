@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,7 +23,8 @@ public class LetterViewAdapter extends ArrayAdapter {
     private int layoutResourceId;
     private ArrayList<String> data = new ArrayList();
 
-    public LetterViewAdapter(Context context, int layoutResourceId, ArrayList<String> data) {
+    public LetterViewAdapter(Context context, int layoutResourceId,
+                             ArrayList<String> data) {
         super(context, layoutResourceId, data);
         this.layoutResourceId = layoutResourceId;
         this.context = context;
@@ -45,17 +47,21 @@ public class LetterViewAdapter extends ArrayAdapter {
             holder = (ViewHolder) row.getTag();
         }
 
-        int leId = context.getResources().getIdentifier(data.get(position), "string", context.getPackageName());
-        String points = context.getResources().getString(leId);
+        Log.d("LetterViewAdapter", "Got data at position " + position + ": " + data.get(position));
 
-        String resource = "letter_" + data.get(position).toLowerCase();
-        int imId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
-        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imId);
+        String letter = data.get(position).split("-")[0].toLowerCase();
+        String amount = data.get(position).split("-")[1];
+
+        String resource = "letter_" + letter;
+        int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageId);
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
 
-        holder.imageTitle.setText("(" + points + ")");
-        holder.imageTitle.setTextSize(18);
+        holder.imageTitle.setText(amount);
+        holder.imageTitle.setTextSize(16);
         holder.image.setImageBitmap(scaled);
+
         return row;
     }
 

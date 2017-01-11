@@ -16,7 +16,8 @@ import android.util.Log;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.s1451552.grabble.MainActivity.LETTER_COUNT;
 import static com.s1451552.grabble.MainActivity.WORD_COUNT;
@@ -55,6 +56,7 @@ public class BackpackActivity extends AppCompatActivity {
     private int mWordCount;
 
     private ArrayList<String> mLetters;
+    private ArrayList<String> mWords;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +71,23 @@ public class BackpackActivity extends AppCompatActivity {
         mLetterCount = grabblePref.getInt(LETTER_COUNT, 0);
         mWordCount = grabblePref.getInt(WORD_COUNT, 0);
 
-        Collection values = letterlistPref.getAll().values();
-        mLetters = new ArrayList<>(values);
+        mLetters = new ArrayList<>();
+        mWords = new ArrayList<>();
+
+        for (int i = 65; i <= 90; i++) {
+            int lCount = letterlistPref.getInt(String.valueOf((char)i), -1);
+            if (lCount > 0) {
+                mLetters.add(String.valueOf((char)i) + "-" + lCount);
+                Log.d("BackpackActivity", String.valueOf((char)i)+ "-" +lCount);
+            }
+        }
+
+        // TODO!!!!! Get words for WORD BAG
+        Map<String, ?> words = wordlistPref.getAll();
+        for (Map.Entry<String, ?> entry : words.entrySet()) {
+            String word = entry.getKey();
+            int points = Integer.parseInt(entry.getValue().toString());
+        }
 
         mActionBar = getSupportActionBar();
         if (mActionBar != null) {
@@ -116,7 +133,7 @@ public class BackpackActivity extends AppCompatActivity {
                 case 0:
                     return LetterBagFragment.newInstance(mLetters);
                 case 1:
-                    return WordBagFragment.newInstance("Word Bag Fragment");
+                    return WordBagFragment.newInstance(mWords);
                 default:
                     return LetterBagFragment.newInstance(mLetters);
             }
@@ -134,7 +151,7 @@ public class BackpackActivity extends AppCompatActivity {
                 case 0:
                     return ("Letter Bag (" + mLetterCount + ")");
                 case 1:
-                    return "Word Bag";
+                    return "Word Bag (" + mWordCount + ")";
             }
             return null;
         }

@@ -1,5 +1,7 @@
 package com.s1451552.grabble;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -23,6 +25,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
+import static com.s1451552.grabble.MainActivity.HIGHSCORE;
+import static com.s1451552.grabble.MainActivity.preferences;
+import static com.s1451552.grabble.MainActivity.word_list;
 import static com.s1451552.grabble.SplashActivity.sWordlist;
 
 /**
@@ -33,7 +38,12 @@ import static com.s1451552.grabble.SplashActivity.sWordlist;
 
 public class LetterBagFragment extends Fragment {
 
-    private static final ArrayList<String> sWordMessages =
+    SharedPreferences grabblePref;
+    SharedPreferences wordlistPref;
+
+    public static final String WORD_COUNT = "word_count";
+
+    private static final ArrayList<String> sSuccessMessages =
             new ArrayList<>(Arrays.asList(
                     "Congratulations!",
                     "Great job!",
@@ -72,6 +82,9 @@ public class LetterBagFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_letterbag, container, false);
 
+        grabblePref = getContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
+        wordlistPref = getContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
+
         mLetters = getArguments().getStringArrayList("letters");
 
         mLettersInBoxes = new HashMap<>();
@@ -90,6 +103,11 @@ public class LetterBagFragment extends Fragment {
         mImageBoxes.add((ImageView) rootView.findViewById(R.id.letter_7));
 
         mBtnGrabble = (Button) rootView.findViewById(R.id.btn_grabble);
+
+        /**
+         * Checks if boxes are full and then searches for
+         * the word in the word list using binary search.
+         */
         mBtnGrabble.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -104,7 +122,7 @@ public class LetterBagFragment extends Fragment {
                 if (boxesFull) {
                     StringBuilder word = new StringBuilder();
                     for (ImageView image : mImageBoxes) {
-                        word.append(mLettersInBoxes.get(image));
+                        word.append(mLettersInBoxes.get(image).split("-")[0]);
                     }
                     WordComparator comp = new WordComparator();
                     int index = Collections.binarySearch(sWordlist, word.toString(), comp);
@@ -115,7 +133,7 @@ public class LetterBagFragment extends Fragment {
                         for (int i = 0; i < 7; i++) {
                             String letter = String.valueOf(word.charAt(i));
                             int letterId = getResources().getIdentifier(letter, "string", getContext().getPackageName());
-                            int points = Integer.parseInt(getContext().getResources().getString(letterId));
+                            int points = Integer.parseInt(getResources().getString(letterId));
                             totalPoints+=points;
                         }
 
@@ -123,9 +141,24 @@ public class LetterBagFragment extends Fragment {
 
                         Toast.makeText(
                                 getContext(),
-                                (sWordMessages.get(msgIndex) + " You just got " + totalPoints + " points!"),
+                                (sSuccessMessages.get(msgIndex)
+                                        + " You just got " + totalPoints + " points!"),
                                 Toast.LENGTH_SHORT)
                                 .show();
+
+                        wordlistPref.edit().putInt(word.toString(), totalPoints).apply();
+
+                        int prevScore = grabblePref.getInt(HIGHSCORE, 0);
+                        int newScore = prevScore + totalPoints;
+                        grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
+
+                        int count;
+                        if (wordlistPref.getAll() != null) {
+                            count = wordlistPref.getAll().size();
+                        } else {
+                            count = 1;
+                        }
+                        grabblePref.edit().putInt(WORD_COUNT, count).apply();
                     } else {
                         Toast.makeText(
                                 getContext(),
@@ -143,13 +176,27 @@ public class LetterBagFragment extends Fragment {
             }
         });
 
+
+        /**
+         * When a letter is clicked on in the bottom box,
+         * it comes back to the grid of letters
+         */
         for (ImageView box : mImageBoxes) {
             box.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     ImageView image = (ImageView) v;
                     if (image.getDrawable() != null) {
-                        mLetters.add(mLettersInBoxes.get(image));
+                        String letter = mLettersInBoxes.get(image).split("-")[0];
+                        int amount = Integer.parseInt(mLettersInBoxes.get(image).split("-")[1]);
+                        amount = amount + 1;
+                        String sAmount = String.valueOf(amount);
+                        String updatedLetter = letter + "-" + sAmount;
+
+                        if (amount > 1)
+                            mLetters.remove(mLettersInBoxes.get(image));
+
+                        mLetters.add(updatedLetter);
                         mLettersInBoxes.remove(image);
 
                         ((BaseAdapter) mGridView.getAdapter()).notifyDataSetChanged();
@@ -159,19 +206,35 @@ public class LetterBagFragment extends Fragment {
             });
         }
 
+        /**
+         * When a letter is selected, it is put
+         * to the closest free letter box for word formation
+         */
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String resource = "letter_" + mLetters.get(position).toLowerCase();
-                int imId = getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
-                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), imId);
+                String resource = "letter_" + mLetters.get(position).split("-")[0].toLowerCase();
+                Log.d("LetterBagFragment", "Clicked on: " + resource);
+                int imId = getContext().getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+                Bitmap bitmap = BitmapFactory.decodeResource(getContext().getResources(), imId);
                 Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
 
                 for (ImageView image : mImageBoxes) {
                     if (image.getDrawable() == null) {
                         image.setImageBitmap(scaled);
-                        mLettersInBoxes.put(image, mLetters.get(position));
+                        String letter = mLetters.get(position).split("-")[0];
+                        int amount = Integer.parseInt(mLetters.get(position).split("-")[1]);
+
+                        amount = amount - 1;
+                        String sAmount = String.valueOf(amount);
+                        String updatedLetter = letter + "-" + sAmount;
+
+                        mLettersInBoxes.put(image, updatedLetter);
                         mLetters.remove(position);
+
+                        if (amount > 0)
+                            mLetters.add(position, updatedLetter);
+
                         ((BaseAdapter) mGridView.getAdapter()).notifyDataSetChanged();
                         break;
                     }
@@ -182,6 +245,10 @@ public class LetterBagFragment extends Fragment {
         return rootView;
     }
 
+    /**
+     * Comparator used for binary search
+     * in the word list (since word list comes sorted)
+     */
     private class WordComparator implements Comparator<String> {
         @Override
         public int compare(String w1, String w2) {
