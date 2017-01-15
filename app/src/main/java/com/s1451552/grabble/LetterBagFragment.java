@@ -22,8 +22,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.s1451552.grabble.MainActivity.HIGHSCORE;
+import static com.s1451552.grabble.MainActivity.LIGHT_GOT;
+import static com.s1451552.grabble.MainActivity.LIGHT_REQUIRED;
+import static com.s1451552.grabble.MainActivity.isLightningMode;
 import static com.s1451552.grabble.MainActivity.letter_list;
 import static com.s1451552.grabble.MainActivity.preferences;
 import static com.s1451552.grabble.MainActivity.word_list;
@@ -156,8 +161,8 @@ public class LetterBagFragment extends Fragment {
 
                             for (ImageView image : mImageBoxes) {
                                 image.setImageDrawable(null);
+                                image.refreshDrawableState();
                             }
-                            mImageBoxes.clear();
 
                             int msgIndex = (int) (Math.random() * 5);
 
@@ -176,6 +181,32 @@ public class LetterBagFragment extends Fragment {
 
                             Log.d("btnGrabbleOnClick", "Highscore: " + newScore);
                             grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
+
+                            if (isLightningMode) {
+                                Set<String> requiredWords = grabblePref.getStringSet(LIGHT_REQUIRED, null);
+                                Set<String> gotWords = grabblePref.getStringSet(LIGHT_GOT, null);
+
+                                if (gotWords == null)
+                                    gotWords = new HashSet<>();
+
+                                gotWords.add(word.toLowerCase());
+                                Log.d("btnGrabbleOnClick", "Lightning mode! Currently have words: "
+                                        + gotWords.toString());
+
+                                grabblePref.edit().putStringSet(LIGHT_GOT, gotWords).apply();
+
+                                boolean completed = true;
+                                for (String w : requiredWords) {
+                                    if (!gotWords.contains(w.toLowerCase())) {
+                                        completed = false;
+                                        break;
+                                    }
+                                }
+
+                                if (completed) {
+                                    isLightningMode = false;
+                                }
+                            }
 
                             int count;
                             if (wordlistPref.getAll() != null) {

@@ -1,6 +1,7 @@
 package com.s1451552.grabble;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,6 +27,9 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -67,12 +71,17 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
+import static com.s1451552.grabble.SplashActivity.sWordlist;
 
 /*
  * Written by Vytautas Mizgiris, S1451552
@@ -103,15 +112,20 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     public static final String LETTER_COUNT = "letter_count";
     public static final String WORD_COUNT = "word_count";
     public static final String HIGHSCORE = "highscore";
+    public static final String LIGHT_REQUIRED = "lightning_points_required";
+    public static final String LIGHT_GOT = "lightning_points_got";
 
     /* Gameplay data (letters, words, etc) */
     public static final String letter_list = "grabble_letterlist";
     public static final String word_list = "grabble_wordlist";
 
+    public static boolean isLightningMode;
+
     private MapView mapView;
     private NavigationView mNavigationView;
     private ProgressDialog mProgressDialog;
     private FloatingActionButton mLightningButton;
+    private AlertDialog mLightningDialog;
     private TextView mCountdown;
     private ActionBar mActionBar;
 
@@ -219,29 +233,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         mLightningButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CountDownTimer ct =  new CountDownTimer(100000, 1) {
-
-                    public void onTick(long mil) {
-                        String min = String.format("%02d", mil/60000);
-                        String sec = String.format("%02d", (int)((mil%60000)/1000));
-                        String ms = String.format("%02d", (int) ((mil%1000)/10));
-                        mCountdown.setText(min + ":" + sec + ":" + ms);
-                        mCountdown.setVisibility(View.VISIBLE);
-
-                        mLightningButton.setClickable(false);
-                        mLightningButton.setBackgroundTintList(
-                                ColorStateList.valueOf(getColor(R.color.transparent_grey)));
-                    }
-
-                    public void onFinish() {
-                        mCountdown.setVisibility(View.INVISIBLE);
-
-                        mLightningButton.setClickable(true);
-                        mLightningButton.setBackgroundTintList(
-                                ColorStateList.valueOf(getColor(R.color.accent)));
-                    }
-                };
-                ct.start();
+                startLightningMode();
             }
         });
 
@@ -325,7 +317,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     @Override
     public void onConnected(Bundle bundle) {
         mLocationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setInterval(2000) // Update location every 2 seconds
                 .setFastestInterval(500);
 
@@ -357,12 +349,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         startActivity(myIntent);
                     }
                 });
-                //dialog.setNegativeButton(getString(R.string.btn_cancel), new DialogInterface.OnClickListener() {
-                //    @Override
-                //    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                //        // TODO Auto-generated method stub
-                //    }
-                //});
                 dialog.show();
             }
 
@@ -370,7 +356,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                     mGoogleApiClient);
-            mOldLocation = mLastLocation;
 
             if (mLastLocation != null) {
                 if (map != null) {
@@ -395,9 +380,15 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
     @Override
     public void onLocationChanged(Location location) {
-        mOldLocation = mLastLocation;
+        if (mOldLocation != null)
+            mOldLocation = mLastLocation;
+        else
+            mOldLocation = location;
+
         mLastLocation = location;
 
+        // Move camera to the player's position,
+        // display letters in close proximity
         if (location != null) {
             if (map != null) {
                 position = new CameraPosition.Builder()
@@ -406,6 +397,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
                 displayClosestLetters(location);
             }
+
+            // Calculate the total distance travelled
             if (mOldLocation != null) {
                 int distance = (int) mLastLocation.distanceTo(mOldLocation);
                 if (grabblePref.contains(TRAVEL_DISTANCE)) {
@@ -477,92 +470,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         return "unchanged";
     }
 
-    private void initMap() {
-        mapView.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(MapboxMap mapboxMap) {
-                Log.d("initMap", "Map ready, initializing map settings...");
-                // Initialize MapboxMap object
-                map = mapboxMap;
-
-                // Game styling requires map to be zoomed in
-                map.setMinZoom(19);
-                map.setMaxZoom(20);
-
-                // Enable user tracking to show the padding affect.
-                map.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
-                map.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.COMPASS);
-                map.getTrackingSettings().setDismissAllTrackingOnGesture(false);
-
-                // Customize the user location icon using the getMyLocationViewSettings object.
-                map.getMyLocationViewSettings().setPadding(0, 500, 0, 0);
-                map.getMyLocationViewSettings().setForegroundTintColor(Color.parseColor("#efca5b"));
-                map.getMyLocationViewSettings().setAccuracyTintColor(0);
-                map.getMyLocationViewSettings().setAccuracyAlpha(1);
-
-                // What does the application do when a marker is selected?
-                map.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener() {
-                    @Override
-                    public boolean onMarkerClick(@NonNull Marker marker) {
-                        String letter = marker.getTitle();
-                        Toast.makeText(
-                                MainActivity.this,
-                                ("Captured letter " + letter + "!"),
-                                Toast.LENGTH_SHORT)
-                                .show();
-
-                        if (mParsedMarkersRaw != null &&
-                                mParsedMarkers != null &&
-                                mParsedMarkers.contains(marker)) {
-                            /**
-                             * 1. Check if marker exists in MARKER array;
-                             *  2. Get index of the marker in MARKER array;
-                             *  3. Remove marker from MARKER array;
-                             *  4. Remove marker from MVO array (Raw) by index.
-                             */
-                            int markerAtIndex = mParsedMarkers.indexOf(marker);
-                            mParsedMarkers.remove(marker);
-                            mParsedMarkersRaw.remove(markerAtIndex);
-                            map.removeMarker(marker);
-
-                            // Do we need to store date for the letters acquired?
-                            // Long tsLong = System.currentTimeMillis()/1000;
-                            // String ts = tsLong.toString();
-
-                            SharedPreferences.Editor editor = letterlistPref.edit();
-
-                            int currentCount = letterlistPref.getInt(marker.getTitle(), -1);
-                            if (currentCount != -1) {
-                                currentCount = currentCount + 1;
-                                editor.remove(marker.getTitle()).apply();
-                                editor.putInt(marker.getTitle(), currentCount).apply();
-                            } else {
-                                editor.putInt(marker.getTitle(), 1).apply();
-                            }
-
-                            Log.d("onMarkerClickListener", String.valueOf(currentCount));
-
-                            int count;
-                            if (letterlistPref.getAll() != null) {
-                                count = letterlistPref.getAll().size();
-                            } else {
-                                count = 1;
-                            }
-                            grabblePref.edit().putInt(LETTER_COUNT, count).apply();
-
-                        } else {
-                            Log.e("onMarkerClickListener", "No such marker in the array!");
-                        }
-                        return false;
-                    }
-                });
-
-                // Once map is initialized, do letter scatter map initialization
-                initLetterMapLoad();
-            }
-        });
-    }
-
     private void initLetterMapLoad() {
         final String TAG = "initLetterMapLoad";
 
@@ -618,9 +525,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             }
         }
     }
-    /*
-     * Fetch and download KML data from URL
-     */
+
     private interface AsyncResponse {
         void processFinish(String output);
     }
@@ -832,6 +737,96 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         }
     }
 
+    private void initMap() {
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                Log.d("initMap", "Map ready, initializing map settings...");
+                // Initialize MapboxMap object
+                map = mapboxMap;
+
+                // Game styling requires map to be zoomed in
+                map.setMinZoom(19);
+                map.setMaxZoom(20);
+
+                // Enable user tracking to show the padding effect.
+                map.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
+                map.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.COMPASS);
+                map.getTrackingSettings().setDismissAllTrackingOnGesture(false);
+
+                // Customize the user location icon using the getMyLocationViewSettings object.
+                map.getMyLocationViewSettings().setPadding(0, 500, 0, 0);
+                map.getMyLocationViewSettings().setForegroundTintColor(Color.parseColor("#efca5b"));
+                map.getMyLocationViewSettings().setAccuracyTintColor(0);
+                map.getMyLocationViewSettings().setAccuracyAlpha(1);
+
+                // What does the application do when a marker is selected?
+                map.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener() {
+                    @Override
+                    public boolean onMarkerClick(@NonNull Marker marker) {
+                        collectLetter(marker);
+                        return false;
+                    }
+                });
+
+                // Once map is initialized, do letter scatter map initialization
+                initLetterMapLoad();
+            }
+        });
+    }
+
+    private void collectLetter(Marker marker) {
+        String letter = marker.getTitle();
+        Toast.makeText(
+                MainActivity.this,
+                ("Captured letter " + letter + "!"),
+                Toast.LENGTH_SHORT)
+                .show();
+
+        if (mParsedMarkersRaw != null &&
+                mParsedMarkers != null &&
+                mParsedMarkers.contains(marker)) {
+            /**
+             * 1. Check if marker exists in MARKER array;
+             *  2. Get index of the marker in MARKER array;
+             *  3. Remove marker from MARKER array;
+             *  4. Remove marker from MVO array (Raw) by index.
+             */
+            int markerAtIndex = mParsedMarkers.indexOf(marker);
+            mParsedMarkers.remove(marker);
+            mParsedMarkersRaw.remove(markerAtIndex);
+            map.removeMarker(marker);
+
+            // Do we need to store date for the letters acquired?
+            // Long tsLong = System.currentTimeMillis()/1000;
+            // String ts = tsLong.toString();
+
+            SharedPreferences.Editor editor = letterlistPref.edit();
+
+            int currentCount = letterlistPref.getInt(marker.getTitle(), -1);
+            if (currentCount != -1) {
+                currentCount = currentCount + 1;
+                editor.remove(marker.getTitle()).apply();
+                editor.putInt(marker.getTitle(), currentCount).apply();
+            } else {
+                editor.putInt(marker.getTitle(), 1).apply();
+            }
+
+            Log.d("collectLetter", String.valueOf(currentCount));
+
+            int count;
+            if (letterlistPref.getAll() != null) {
+                count = letterlistPref.getAll().size();
+            } else {
+                count = 1;
+            }
+            grabblePref.edit().putInt(LETTER_COUNT, count).apply();
+
+        } else {
+            Log.e("collectLetter", "No such marker in parsed markers array!");
+        }
+    }
+
     private void displayClosestLetters(Location location) {
         final String TAG = "displayClosestLetters";
 
@@ -863,6 +858,133 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 }
             }
         }
+    }
+
+    private void startLightningMode() {
+        String[] words = getRandomWords();
+        Set<String> wordset = new HashSet<>(Arrays.asList(words));
+        grabblePref.edit().putStringSet(LIGHT_REQUIRED, wordset).apply();
+
+        View dialogView = getLayoutInflater().inflate(R.layout.fragment_dialoglist, null);
+        ListView dialogList = (ListView) dialogView.findViewById(R.id.dialog_word_list);
+        dialogList.setAdapter(
+                new LightningDialogViewAdapter(
+                        MainActivity.this, R.layout.layout_dialoglistitem, words)
+        );
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+        if (dialogList.getParent() != null) {
+            ((ViewGroup) dialogList.getParent()).removeView(dialogList);
+        }
+
+        dialogBuilder.setView(dialogList);
+        dialogBuilder.setTitle("Words you will need to find:");
+        dialogBuilder.setIcon(getDrawable(R.drawable.ic_timer_black_24dp));
+        dialogBuilder.setNegativeButton("Maybe later...", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        dialogBuilder.setPositiveButton("Let's go!", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                isLightningMode = true;
+                CountDownTimer ct =  new CountDownTimer(100000, 1) {
+
+                    public void onTick(long mil) {
+                        String min = String.format("%02d", mil/60000);
+                        String sec = String.format("%02d", (int)((mil%60000)/1000));
+                        String ms = String.format("%02d", (int) ((mil%1000)/10));
+                        mCountdown.setText(min + ":" + sec + ":" + ms);
+                        mCountdown.setVisibility(View.VISIBLE);
+
+                        mLightningButton.setClickable(false);
+                        mLightningButton.setBackgroundTintList(
+                                ColorStateList.valueOf(getColor(R.color.transparent_grey)));
+
+                        if (!isLightningMode) {
+                            this.onFinish();
+                        }
+                    }
+
+                    public void onFinish() {
+                        mCountdown.setVisibility(View.INVISIBLE);
+
+                        mLightningButton.setClickable(true);
+                        mLightningButton.setBackgroundTintList(
+                                ColorStateList.valueOf(getColor(R.color.accent)));
+
+                        isLightningMode = false;
+                        if (hasCompletedLightning()) {
+                            int prevScore = grabblePref.getInt(HIGHSCORE, 0);
+                            int newScore = prevScore + 200;
+
+                            Log.d("btnGrabbleOnClick", "Lightning mode complete!!! Extra points: 200");
+                            Log.d("btnGrabbleOnClick", "Current highscore!!! " + newScore);
+                            grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
+
+                            Toast.makeText(
+                                    MainActivity.this,
+                                    ("You have completed the Lightning Mode and were " +
+                                            "awarded 200 extra points!"),
+                                    Toast.LENGTH_LONG)
+                                    .show();
+                        } else {
+                            Toast.makeText(
+                                    MainActivity.this,
+                                    ("You have ran out of time for the Lightning Mode! " +
+                                            "Better luck next time..."),
+                                    Toast.LENGTH_LONG)
+                                    .show();
+                        }
+
+                        grabblePref.edit()
+                                .remove(LIGHT_GOT)
+                                .remove(LIGHT_REQUIRED)
+                                .apply();
+
+                        this.cancel();
+                    }
+                };
+                ct.start();
+                dialog.dismiss();
+            }
+        });
+
+        mLightningDialog = dialogBuilder.create();
+        mLightningDialog.show();
+    }
+
+    private String[] getRandomWords() {
+        int wordlistSize = sWordlist.size();
+        int[] indices = new int[3];
+        String[] words = new String[3];
+
+        indices[0] = (int) (Math.random() * wordlistSize);
+        indices[1] = (int) (Math.random() * wordlistSize);
+        indices[2] = (int) (Math.random() * wordlistSize);
+
+        for (int i = 0; i < 3; i++) {
+            words[i] = sWordlist.get(indices[i]);
+        }
+        return words;
+    }
+
+    private boolean hasCompletedLightning() {
+        Set<String> requiredWords = grabblePref.getStringSet(LIGHT_REQUIRED, null);
+        Set<String> gotWords = grabblePref.getStringSet(LIGHT_GOT, null);
+
+        if (requiredWords != null && gotWords != null) {
+            for (String w : requiredWords) {
+                if (!gotWords.contains(w)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     private int checkFirstRun() {

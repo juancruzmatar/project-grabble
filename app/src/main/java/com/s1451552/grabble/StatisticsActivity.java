@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.TextView;
 
@@ -53,9 +54,10 @@ public class StatisticsActivity extends AppCompatActivity {
                 if (distance < 1000) {
                     txtDistance.setText(String.valueOf(distance) + " meters");
                 } else {
+                    Log.d("StatisticsActivity", "Distance: " + distance);
                     distance = distance / 1000;
                     String sDistance = mDecFormatter.format(distance);
-                    txtDistance.setText(sDistance + " km");
+                    txtDistance.setText(sDistance + " kilometers");
                 }
         }
         if (grabblePref.contains(LETTER_COUNT)) {
@@ -79,7 +81,7 @@ public class StatisticsActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            startActivity(new Intent(this, MainActivity.class));
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);

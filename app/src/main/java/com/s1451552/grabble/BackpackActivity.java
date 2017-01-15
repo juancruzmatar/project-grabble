@@ -101,6 +101,8 @@ public class BackpackActivity extends AppCompatActivity {
             if (lCount > 0) {
                 mLetters.add(String.valueOf((char)i) + "-" + lCount);
             }
+            // TESTING
+            //mLetters.add(String.valueOf((char)i) + "-" + 10);
         }
     }
 
@@ -131,7 +133,7 @@ public class BackpackActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            startActivity(new Intent(this, MainActivity.class));
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);
