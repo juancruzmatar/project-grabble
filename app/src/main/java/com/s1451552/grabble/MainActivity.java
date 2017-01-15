@@ -500,7 +500,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 map.getMyLocationViewSettings().setAccuracyTintColor(0);
                 map.getMyLocationViewSettings().setAccuracyAlpha(1);
 
-                // TODO:
                 // What does the application do when a marker is selected?
                 map.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener() {
                     @Override

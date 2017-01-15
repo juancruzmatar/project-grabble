@@ -16,7 +16,6 @@ import android.util.Log;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.s1451552.grabble.MainActivity.LETTER_COUNT;
@@ -71,23 +70,8 @@ public class BackpackActivity extends AppCompatActivity {
         mLetterCount = grabblePref.getInt(LETTER_COUNT, 0);
         mWordCount = grabblePref.getInt(WORD_COUNT, 0);
 
-        mLetters = new ArrayList<>();
-        mWords = new ArrayList<>();
-
-        for (int i = 65; i <= 90; i++) {
-            int lCount = letterlistPref.getInt(String.valueOf((char)i), -1);
-            if (lCount > 0) {
-                mLetters.add(String.valueOf((char)i) + "-" + lCount);
-                Log.d("BackpackActivity", String.valueOf((char)i)+ "-" +lCount);
-            }
-        }
-
-        // TODO!!!!! Get words for WORD BAG
-        Map<String, ?> words = wordlistPref.getAll();
-        for (Map.Entry<String, ?> entry : words.entrySet()) {
-            String word = entry.getKey();
-            int points = Integer.parseInt(entry.getValue().toString());
-        }
+        parseLetters();
+        parseWords();
 
         mActionBar = getSupportActionBar();
         if (mActionBar != null) {
@@ -95,7 +79,7 @@ public class BackpackActivity extends AppCompatActivity {
             mActionBar.setDisplayHomeAsUpEnabled(true);
         }
 
-        // Create the adapter that will return a fragment for each of the three
+        // Create the adapter that will return a fragment for each of the two
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
@@ -105,6 +89,42 @@ public class BackpackActivity extends AppCompatActivity {
 
         mTabLayout = (TabLayout) findViewById(R.id.tabs);
         mTabLayout.setupWithViewPager(mViewPager);
+    }
+
+    /**
+     * Get collected letters from the SharedPreferences
+     */
+    private void parseLetters() {
+        mLetters = new ArrayList<>();
+        for (int i = 65; i <= 90; i++) {
+            int lCount = letterlistPref.getInt(String.valueOf((char)i), -1);
+            if (lCount > 0) {
+                mLetters.add(String.valueOf((char)i) + "-" + lCount);
+            }
+        }
+    }
+
+    /**
+     * Get collected words from the SharedPreferences
+     */
+    private void parseWords() {
+        mWords = new ArrayList<>();
+        Map<String, ?> words = wordlistPref.getAll();
+        for (Map.Entry<String, ?> entry : words.entrySet()) {
+            String word = entry.getKey();
+            int points = Integer.parseInt(entry.getValue().toString());
+            mWords.add(word + "-" + points);
+        }
+    }
+
+    /**
+     * Update the WordBag view once a new word is added
+     * Called from {@link LetterBagFragment}
+     */
+    public void addWord(String word, int points) {
+        mWords.add(word + "-" + points);
+        mWordCount = grabblePref.getInt(WORD_COUNT, 0);
+        mViewPager.getAdapter().notifyDataSetChanged();
     }
 
     @Override
@@ -141,7 +161,10 @@ public class BackpackActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            // Show 2 pages (Letter Bag, Word Bag)
+            /**
+             * Show 2 pages:
+             * Letter Bag / Word Bag
+             */
             return 2;
         }
 

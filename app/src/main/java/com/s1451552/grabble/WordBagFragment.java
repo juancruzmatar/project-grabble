@@ -5,6 +5,8 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ListView;
 
 import java.util.ArrayList;
 
@@ -15,6 +17,9 @@ import java.util.ArrayList;
  */
 
 public class WordBagFragment extends Fragment {
+
+    public ListView mListView;
+    private WordViewAdapter mWordListAdapter;
 
     private ArrayList<String> mWords;
 
@@ -40,7 +45,9 @@ public class WordBagFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_wordbag, container, false);
         mWords = getArguments().getStringArrayList("words");
 
-        //TODO!!!! copy from letterbag fragment
+        mListView = (ListView) rootView.findViewById(R.id.word_list);
+        mWordListAdapter = new WordViewAdapter(getActivity(), R.layout.layout_wordlistitem, mWords);
+        mListView.setAdapter(mWordListAdapter);
         return rootView;
     }
 }

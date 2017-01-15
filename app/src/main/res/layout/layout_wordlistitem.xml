@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/letter_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="centerInside" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/word_image_list">
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/letter_text"
+        android:id="@+id/word_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.AppCompat.Caption"
         android:fontFamily="sans-serif"
         android:textAllCaps="false"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="220dp"
         android:layout_marginTop="20dp"
-        android:layout_toEndOf="@id/letter_image"
+        android:layout_toEndOf="@id/word_image_list"
         android:layout_alignParentStart="true" />
 
 </RelativeLayout>

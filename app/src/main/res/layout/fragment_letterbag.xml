@@ -10,7 +10,7 @@
     tools:context="com.s1451552.grabble.LetterBagFragment">
 
     <LinearLayout
-        android:id="@+id/linearLayout1"
+        android:id="@+id/letterbag_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -23,6 +23,7 @@
             android:layout_marginBottom="15dp"
             android:layout_weight="7"
             android:numColumns="6"
+            android:verticalSpacing="6dp"
             android:gravity="top">
         </GridView>
 

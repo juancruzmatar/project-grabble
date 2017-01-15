@@ -10,20 +10,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
 /**
- * Created by Vytautas on 08/11/2016.
+ * Created by Vytautas on 12/01/2017.
  */
 
-public class LetterViewAdapter extends ArrayAdapter {
+public class WordViewAdapter extends ArrayAdapter {
     private Context context;
     private int layoutResourceId;
     private ArrayList<String> data = new ArrayList();
 
-    public LetterViewAdapter(Context context, int layoutResourceId,
+    public WordViewAdapter(Context context, int layoutResourceId,
                              ArrayList<String> data) {
         super(context, layoutResourceId, data);
         this.layoutResourceId = layoutResourceId;
@@ -40,31 +41,37 @@ public class LetterViewAdapter extends ArrayAdapter {
             LayoutInflater inflater = ((Activity) context).getLayoutInflater();
             row = inflater.inflate(layoutResourceId, parent, false);
             holder = new ViewHolder();
-            holder.imageTitle = (TextView) row.findViewById(R.id.letter_text);
-            holder.image = (ImageView) row.findViewById(R.id.letter_image);
+            holder.imageTitle = (TextView) row.findViewById(R.id.word_text);
+            holder.imageList = (LinearLayout) row.findViewById(R.id.word_image_list);
             row.setTag(holder);
         } else {
             holder = (ViewHolder) row.getTag();
         }
 
-        String letter = data.get(position).split("-")[0].toLowerCase();
+        String word = data.get(position).split("-")[0].toLowerCase();
         String amount = data.get(position).split("-")[1];
 
-        String resource = "letter_" + letter;
-        int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+        for (char l : word.toCharArray()) {
+            String resource = "letter_" + l;
+            int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
-        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageId);
-        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
+            Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageId);
+            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
+
+            ImageView letter = new ImageView(context);
+            letter.setImageBitmap(scaled);
+
+            holder.imageList.addView(letter);
+        }
 
         holder.imageTitle.setText(amount);
         holder.imageTitle.setTextSize(16);
-        holder.image.setImageBitmap(scaled);
 
         return row;
     }
 
     static class ViewHolder {
         TextView imageTitle;
-        ImageView image;
+        LinearLayout imageList;
     }
 }

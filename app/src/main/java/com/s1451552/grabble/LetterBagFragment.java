@@ -4,8 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -26,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 import static com.s1451552.grabble.MainActivity.HIGHSCORE;
+import static com.s1451552.grabble.MainActivity.letter_list;
 import static com.s1451552.grabble.MainActivity.preferences;
 import static com.s1451552.grabble.MainActivity.word_list;
 import static com.s1451552.grabble.SplashActivity.sWordlist;
@@ -39,6 +38,7 @@ import static com.s1451552.grabble.SplashActivity.sWordlist;
 public class LetterBagFragment extends Fragment {
 
     SharedPreferences grabblePref;
+    SharedPreferences letterlistPref;
     SharedPreferences wordlistPref;
 
     public static final String WORD_COUNT = "word_count";
@@ -51,12 +51,14 @@ public class LetterBagFragment extends Fragment {
                     "Top man!",
                     "Niiice!"));
 
+    private WordBagFragment mWordBagFragment;
     private GridView mGridView;
-    private ArrayList<ImageView> mImageBoxes;
+
     private Button mBtnGrabble;
     private LetterViewAdapter mGridAdapter;
 
     private ArrayList<String> mLetters;
+    private ArrayList<ImageView> mImageBoxes;
     private HashMap<ImageView, String> mLettersInBoxes;
 
     public LetterBagFragment() {
@@ -83,10 +85,10 @@ public class LetterBagFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_letterbag, container, false);
 
         grabblePref = getContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
+        letterlistPref = getContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
         wordlistPref = getContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
 
         mLetters = getArguments().getStringArrayList("letters");
-
         mLettersInBoxes = new HashMap<>();
 
         mGridView = (GridView) rootView.findViewById(R.id.letter_grid);
@@ -120,45 +122,73 @@ public class LetterBagFragment extends Fragment {
                         mImageBoxes.get(6).getDrawable() != null;
 
                 if (boxesFull) {
-                    StringBuilder word = new StringBuilder();
+                    StringBuilder wordBuilder = new StringBuilder();
                     for (ImageView image : mImageBoxes) {
-                        word.append(mLettersInBoxes.get(image).split("-")[0]);
+                        wordBuilder.append(mLettersInBoxes.get(image).split("-")[0]);
                     }
+                    String word = wordBuilder.toString();
+
                     WordComparator comp = new WordComparator();
-                    int index = Collections.binarySearch(sWordlist, word.toString(), comp);
+                    int index = Collections.binarySearch(sWordlist, word, comp);
                     Log.d("mBtnGrabble", "Binary search in wordlist resulted in index: " + index);
 
                     if (index > -1) {
-                        int totalPoints = 0;
-                        for (int i = 0; i < 7; i++) {
-                            String letter = String.valueOf(word.charAt(i));
-                            int letterId = getResources().getIdentifier(letter, "string", getContext().getPackageName());
-                            int points = Integer.parseInt(getResources().getString(letterId));
-                            totalPoints+=points;
-                        }
-
-                        int msgIndex = (int) (Math.random() * 5);
-
-                        Toast.makeText(
-                                getContext(),
-                                (sSuccessMessages.get(msgIndex)
-                                        + " You just got " + totalPoints + " points!"),
-                                Toast.LENGTH_SHORT)
-                                .show();
-
-                        wordlistPref.edit().putInt(word.toString(), totalPoints).apply();
-
-                        int prevScore = grabblePref.getInt(HIGHSCORE, 0);
-                        int newScore = prevScore + totalPoints;
-                        grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
-
-                        int count;
-                        if (wordlistPref.getAll() != null) {
-                            count = wordlistPref.getAll().size();
+                        if (wordlistPref.contains(word)) {
+                            Toast.makeText(
+                                    getContext(),
+                                    ("You already have such word! No go m8"),
+                                    Toast.LENGTH_SHORT)
+                                    .show();
                         } else {
-                            count = 1;
+                            int totalPoints = 0;
+                            for (int i = 0; i < 7; i++) {
+                                String letter = String.valueOf(word.charAt(i));
+                                int letterId = getResources().getIdentifier(letter, "string", getContext().getPackageName());
+                                int points = Integer.parseInt(getResources().getString(letterId));
+                                totalPoints += points;
+
+                                int currLetterAmount = letterlistPref.getInt(letter, -1);
+                                if (currLetterAmount > 0) {
+                                    currLetterAmount -= 1;
+                                    letterlistPref.edit().putInt(letter, currLetterAmount).apply();
+                                }
+                            }
+
+                            for (ImageView image : mImageBoxes) {
+                                image.setImageDrawable(null);
+                            }
+                            mImageBoxes.clear();
+
+                            int msgIndex = (int) (Math.random() * 5);
+
+                            Toast.makeText(
+                                    getContext(),
+                                    (sSuccessMessages.get(msgIndex)
+                                            + " You just got " + totalPoints + " points!"),
+                                    Toast.LENGTH_SHORT)
+                                    .show();
+
+                            Log.d("btnGrabbleOnClick", word + " " + totalPoints);
+                            wordlistPref.edit().putInt(word, totalPoints).apply();
+
+                            int prevScore = grabblePref.getInt(HIGHSCORE, 0);
+                            int newScore = prevScore + totalPoints;
+
+                            Log.d("btnGrabbleOnClick", "Highscore: " + newScore);
+                            grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
+
+                            int count;
+                            if (wordlistPref.getAll() != null) {
+                                count = wordlistPref.getAll().size();
+                            } else {
+                                count = 1;
+                            }
+                            Log.d("btnGrabbleOnClick", "Total word count: " + count);
+                            grabblePref.edit().putInt(WORD_COUNT, count).apply();
+
+                            // Update WordBag fragment view with the new word
+                            ((BackpackActivity) getActivity()).addWord(word, totalPoints);
                         }
-                        grabblePref.edit().putInt(WORD_COUNT, count).apply();
                     } else {
                         Toast.makeText(
                                 getContext(),
@@ -178,6 +208,7 @@ public class LetterBagFragment extends Fragment {
 
 
         /**
+         * TODO: bug!!! letters come back repeated
          * When a letter is clicked on in the bottom box,
          * it comes back to the grid of letters
          */
