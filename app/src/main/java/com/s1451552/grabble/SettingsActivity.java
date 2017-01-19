@@ -1,8 +1,9 @@
 package com.s1451552.grabble;
 
-
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -11,6 +12,8 @@ import android.preference.PreferenceActivity;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MenuItem;
 
 /**
@@ -85,6 +88,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 .replace(android.R.id.content, new GeneralPreferenceFragment())
                 .commit();
 
+        PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
+
         setupActionBar();
     }
 
@@ -120,11 +125,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_general);
             setHasOptionsMenu(true);
 
-            // Bind the summaries of EditText/List preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
+            Preference nickname = findPreference("nickname");
+            // Bind nickname change to the summary of the preference
+            bindPreferenceSummaryToValue(nickname);
         }
     }
 }

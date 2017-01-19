@@ -8,9 +8,6 @@
     android:layout_height="match_parent"
     tools:context="com.s1451552.grabble.MainActivity">
 
-    <!-- The main content view -->
-
-    <!-- The navigation menu -->
     <android.support.design.widget.NavigationView
         android:id="@+id/navigation"
         android:layout_width="56dp"

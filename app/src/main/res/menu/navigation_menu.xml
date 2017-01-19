@@ -5,18 +5,19 @@
         <item
             android:id="@+id/nav_backpack"
             android:icon="@drawable/ic_letter_black_24dp"
-            android:title="Backpack" />
+            android:title="@string/nav_backpack" />
         <item
             android:id="@+id/nav_statistics"
             android:icon="@drawable/ic_scores_black_24dp"
-            android:title="Statistics" />
+            android:title="@string/nav_statistics" />
         <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_settings_black_24dp"
-            android:title="Settings" />
+            android:title="@string/nav_settings" />
         <item
-            android:id="@+id/nav_night"
+            android:id="@+id/nav_nightmode"
             android:icon="@drawable/ic_moon_black_24dp"
-            android:title="Toggle Night Mode" />
+            android:title="@string/nav_nightmode"
+            android:visible="false" />
     </group>
 </menu>

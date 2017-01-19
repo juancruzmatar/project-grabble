@@ -8,11 +8,18 @@
     <string name="msg_permissions">Please enable required permissions to use the app!</string>
     <string name="msg_gps_disabled_title">Location not enabled</string>
     <string name="msg_gps_disabled">Please enable location services to use the app!</string>
-    <string name="msg_goto_location_settings">Go to location settings...</string>
+    <string name="msg_goto_location_settings">Go to location settings&#8320;</string>
 
     <string name="title_activity_settings">Settings</string>
     <string name="title_activity_backpack">Backpack</string>
     <string name="title_activity_statistics">Statistics</string>
+    <string name="title_activity_about">About</string>
+
+    <!-- Navigation menu (MainActivity) -->
+    <string name="nav_backpack">Backpack</string>
+    <string name="nav_statistics">Statistics</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_nightmode">Nightmode</string>
 
     <!-- Backpack -->
     <string name="btn_make_word">Grabble it!</string>
@@ -31,25 +38,11 @@
     <!-- Settings -->
     <string name="pref_header_general">General</string>
 
-    <string name="pref_title_social_recommendations">Enable social recommendations</string>
-    <string name="pref_description_social_recommendations">Recommendations for people to contact
-        based on your message history
-    </string>
-
-    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_title_display_name">Your nickname</string>
     <string name="pref_default_display_name">Grabble Player</string>
 
-    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
-    <string-array name="pref_example_list_titles">
-        <item>Always</item>
-        <item>When possible</item>
-        <item>Never</item>
-    </string-array>
-    <string-array name="pref_example_list_values">
-        <item>1</item>
-        <item>0</item>
-        <item>-1</item>
-    </string-array>
+    <string name="pref_title_night_mode">Automatic night mode</string>
+    <string name="pref_summary_night_mode">Will automatically toggle night colours of the map between 6pm and 8am</string>
 
-    <string name="title_activity_maps">Map</string>
+    <string name="pref_title_about">About</string>
 </resources>

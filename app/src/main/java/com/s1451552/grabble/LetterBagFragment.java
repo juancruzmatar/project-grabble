@@ -17,6 +17,8 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.squareup.picasso.Picasso;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,7 +143,7 @@ public class LetterBagFragment extends Fragment {
                         if (wordlistPref.contains(word)) {
                             Toast.makeText(
                                     getContext(),
-                                    ("You already have such word! No go m8"),
+                                    ("You already have such word, friend! :-)"),
                                     Toast.LENGTH_SHORT)
                                     .show();
                         } else {
@@ -278,12 +280,15 @@ public class LetterBagFragment extends Fragment {
                 String resource = "letter_" + mLetters.get(position).split("-")[0].toLowerCase();
                 Log.d("LetterBagFragment", "Clicked on: " + resource);
                 int imId = getContext().getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
-                Bitmap bitmap = BitmapFactory.decodeResource(getContext().getResources(), imId);
-                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
 
                 for (ImageView image : mImageBoxes) {
                     if (image.getDrawable() == null) {
-                        image.setImageBitmap(scaled);
+                        Picasso.with(getContext())
+                                .load(imId)
+                                .resize(120, 120)
+                                .centerCrop()
+                                .into(image);
+
                         String letter = mLetters.get(position).split("-")[0];
                         int amount = Integer.parseInt(mLetters.get(position).split("-")[1]);
 

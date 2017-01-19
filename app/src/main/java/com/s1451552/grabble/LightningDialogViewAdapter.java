@@ -14,6 +14,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 /**
  * Created by Vytautas on 15/01/2017.
  */
@@ -53,11 +55,13 @@ public class LightningDialogViewAdapter extends ArrayAdapter {
             String resource = "letter_" + l;
             int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
-            Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageId);
-            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 100, 100, true);
-
             ImageView letter = new ImageView(context);
-            letter.setImageBitmap(scaled);
+
+            Picasso.with(context)
+                    .load(imageId)
+                    .resize(100, 100)
+                    .centerCrop()
+                    .into(letter);
 
             wordList.addView(letter);
         }

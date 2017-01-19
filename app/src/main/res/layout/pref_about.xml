@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:weightSum="1">
+
+    <ImageView
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        app:srcCompat="@drawable/ic_grabble"
+        android:id="@+id/imageView"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:paddingLeft="30dp"
+        android:paddingRight="30dp" />
+
+    <TextView
+        android:text="Grabble"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/grabble_txt"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:textSize="18sp" />
+
+    <TextView
+        android:text="version: 1.0-alpha.1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/version_txt"
+        android:gravity="center"
+        android:layout_gravity="center" />
+
+    <TextView
+        android:text="author: s1451552"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/author_txt"
+        android:gravity="center"
+        android:layout_gravity="center" />
+
+    <TextView
+        android:text="disclaimer: this project is developed for educational purposes only."
+        android:layout_width="174dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/disclaimer_txt"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp" />
+</LinearLayout>

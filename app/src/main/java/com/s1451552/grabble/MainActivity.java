@@ -3,19 +3,24 @@ package com.s1451552.grabble;
 import android.Manifest;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -25,7 +30,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.DragEvent;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
@@ -43,6 +50,8 @@ import com.google.android.gms.location.LocationRequest;
 
 import com.google.android.gms.location.LocationServices;
 import com.mapbox.mapboxsdk.MapboxAccountManager;
+import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
@@ -77,6 +86,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -85,7 +96,7 @@ import static com.s1451552.grabble.SplashActivity.sWordlist;
 
 /*
  * Written by Vytautas Mizgiris, S1451552
- * Nov - Dec 2016
+ * Nov 2016 - Jan 2017
  *
  * Borrowed open-source and tutorial code from:
  * Mapbox: https://www.mapbox.com/android-sdk/
@@ -103,6 +114,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     SharedPreferences grabblePref;
     SharedPreferences letterlistPref;
     SharedPreferences wordlistPref;
+    SharedPreferences settingsPref;
+    SharedPreferences.OnSharedPreferenceChangeListener prefListener;
 
     /* Main preferences */
     public static final int DOESNT_EXIST = -1;
@@ -130,7 +143,9 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private ActionBar mActionBar;
 
     private MapboxMap map;
-    private boolean isNight;
+    private int dayHour;
+    private static boolean isNightChecked;
+    private static boolean isNightAuto;
     private CameraPosition position;
 
     Location mLastLocation;
@@ -153,19 +168,16 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
         letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
         wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
+        settingsPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
         PACKAGE_NAME = getApplicationContext().getPackageName();
 
+        dayHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+
         // Init Nav Box night icon 'isChecked' value
-        isNight = false;
-
-        // Remove title bar
-        //this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        // Remove notification bar
-        //this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        // Set title bar to be transparent
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        isNightChecked = false;
+        isNightAuto = settingsPref.getBoolean("nightmode_switch", true);
+        Log.d(this.toString(), String.valueOf(isNightAuto) + " - auto night change");
 
         setContentView(R.layout.activity_main);
 
@@ -174,13 +186,44 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             mActionBar.hide();
         }
 
+        // Creating the Mapbox map view
         mapView = (MapView) findViewById(R.id.mapview);
-        mNavigationView = (NavigationView) findViewById(R.id.navigation);
-        mLightningButton = (FloatingActionButton) findViewById(R.id.start_lightning);
-        mCountdown = (TextView) findViewById(R.id.countdown);
-
-        // Creating a mapView
         mapView.onCreate(savedInstanceState);
+
+        mNavigationView = (NavigationView) findViewById(R.id.navigation);
+        setupNavigationMenu();
+
+        mCountdown = (TextView) findViewById(R.id.countdown);
+        mLightningButton = (FloatingActionButton) findViewById(R.id.start_lightning);
+        mLightningButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startLightningMode();
+            }
+        });
+
+        // Message that will display if letter data is being downloaded
+        mProgressDialog = new ProgressDialog(MainActivity.this);
+        mProgressDialog.setMessage("Downloading map data...");
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        mProgressDialog.setCancelable(true);
+
+        mLettersAround = new ArrayList<>();
+        mParsedMarkers = new ArrayList<>();
+        mParsedMarkersRaw = new ArrayList<>();
+
+        // Request permissions for location access
+        // (directing to the class RuntimePermissions)
+        requestAppPermissions(new String[]{
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION},
+                R.string.msg_permissions, REQUEST_PERMISSIONS);
+    }
+
+    private void setupNavigationMenu() {
+        if (mNavigationView != null)
+            mNavigationView.getMenu().findItem(R.id.nav_nightmode).setVisible(!isNightAuto);
 
         // Setting up selected item listener for the nav menu
         mNavigationView.setNavigationItemSelectedListener(
@@ -212,15 +255,17 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                                 startActivity(i);
                                 return true;
                             }
-                            case R.id.nav_night: {
-                                if(!isNight) {
+                            case R.id.nav_nightmode: {
+                                if(!isNightChecked) {
                                     menuItem.setChecked(true);
-                                    map.setStyleUrl(getString(R.string.mapref_night));
-                                    isNight = true;
+                                    if (map != null)
+                                        map.setStyleUrl(getString(R.string.mapref_night));
+                                    isNightChecked = true;
                                 } else {
                                     menuItem.setChecked(false);
-                                    map.setStyleUrl(getString(R.string.mapref));
-                                    isNight = false;
+                                    if (map != null)
+                                        map.setStyleUrl(getString(R.string.mapref));
+                                    isNightChecked = false;
                                 }
 
                                 return true;
@@ -229,31 +274,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         return true;
                     }
                 });
-
-        mLightningButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startLightningMode();
-            }
-        });
-
-        // Message that will display if letter data is being downloaded
-        mProgressDialog = new ProgressDialog(MainActivity.this);
-        mProgressDialog.setMessage("Downloading map data...");
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        mProgressDialog.setCancelable(true);
-
-        mLettersAround = new ArrayList<>();
-        mParsedMarkers = new ArrayList<>();
-        mParsedMarkersRaw = new ArrayList<>();
-
-        // Request permissions for location access
-        // (directing to the class RuntimePermissions)
-        requestAppPermissions(new String[]{
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_FINE_LOCATION},
-                R.string.msg_permissions, REQUEST_PERMISSIONS);
     }
 
     @Override
@@ -276,12 +296,29 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     public void onResume() {
         super.onResume();
         mapView.onResume();
+
+        // Register daytime change receiver
+        registerReceiver(mDaytimeReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
+
+        isNightAuto = settingsPref.getBoolean("nightmode_switch", true);
+        if (mNavigationView != null)
+            mNavigationView.getMenu().findItem(R.id.nav_nightmode).setVisible(!isNightAuto);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mapView.onPause();
+
+        // Unregister daytime change receiver
+        try {
+            unregisterReceiver(mDaytimeReceiver);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("Receiver not registered")) {
+                Log.w(this.toString(),"Tried to unregister the receiver when it's not registered");
+            } else { throw e; }
+        }
+
         this.writeLetterMap();
     }
 
@@ -985,6 +1022,25 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             return true;
         }
         return false;
+    }
+
+    private final DaytimeChangeReceiver mDaytimeReceiver = new DaytimeChangeReceiver();
+    public class DaytimeChangeReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(final Context context, Intent intent) {
+
+            // Checking the current time and adjusting the map colours accordingly
+            int currHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+            if (currHour != dayHour && currHour == 8) {
+                Log.d("DaytimeChangeReceiver", "Daytime changed, it's the dawn");
+                map.setStyleUrl(getString(R.string.mapref));
+            } else if (currHour != dayHour && currHour == 18) {
+                Log.d("DaytimeChangeReceiver", "Daytime changed, it's the sunset");
+                map.setStyleUrl(getString(R.string.mapref_night));
+            }
+            dayHour = currHour;
+        }
     }
 
     private int checkFirstRun() {

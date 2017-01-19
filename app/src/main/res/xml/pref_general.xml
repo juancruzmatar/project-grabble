@@ -2,21 +2,27 @@
 
     <EditTextPreference
         android:capitalize="words"
-        android:defaultValue="Grabble Player"
+        android:defaultValue="@string/pref_default_display_name"
         android:inputType="textCapWords"
-        android:key="example_text"
+        android:key="nickname"
         android:maxLines="1"
         android:selectAllOnFocus="true"
         android:singleLine="true"
-        android:title="Change nickname" />
+        android:title="@string/pref_title_display_name" />
 
     <SwitchPreference
         android:defaultValue="true"
-        android:key="example_switch"
-        android:summary="Will automatically toggle night colours of the map between 6pm and 8am"
-        android:title="Automatic night mode" />
+        android:key="nightmode_switch"
+        android:summary="@string/pref_summary_night_mode"
+        android:title="@string/pref_title_night_mode" />
 
     <Preference
-        android:title="About" />
+        android:title="@string/pref_title_about">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.s1451552.grabble"
+            android:targetClass="com.s1451552.grabble.AboutActivity"
+            />
+    </Preference>
 
 </PreferenceScreen>

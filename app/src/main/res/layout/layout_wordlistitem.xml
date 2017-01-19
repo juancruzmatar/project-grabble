@@ -4,11 +4,10 @@
     android:layout_height="match_parent">
 
     <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
         android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/word_image_list">
-    </LinearLayout>
+        android:id="@+id/word_image_list"/>
 
     <TextView
         android:id="@+id/word_text"

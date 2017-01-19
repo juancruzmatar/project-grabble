@@ -13,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import java.util.ArrayList;
 
 /**
@@ -55,11 +57,13 @@ public class WordViewAdapter extends ArrayAdapter {
             String resource = "letter_" + l;
             int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
-            Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageId);
-            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
-
             ImageView letter = new ImageView(context);
-            letter.setImageBitmap(scaled);
+
+            Picasso.with(context)
+                    .load(imageId)
+                    .resize(120, 120)
+                    .centerCrop()
+                    .into(letter);
 
             holder.imageList.addView(letter);
         }
