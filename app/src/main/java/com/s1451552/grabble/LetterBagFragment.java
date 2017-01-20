@@ -122,7 +122,6 @@ public class LetterBagFragment extends Fragment {
         });
 
         /**
-         * TODO: bug!!! letters come back repeated
          * When a letter is clicked on in the bottom box,
          * it comes back to the grid of letters
          */
