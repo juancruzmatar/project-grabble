@@ -102,7 +102,7 @@ public class BackpackActivity extends AppCompatActivity {
                 mLetters.add(String.valueOf((char)i) + "-" + lCount);
             }
             // TESTING
-            //mLetters.add(String.valueOf((char)i) + "-" + 10);
+            // mLetters.add(String.valueOf((char)i) + "-" + 10);
         }
     }
 
@@ -127,6 +127,7 @@ public class BackpackActivity extends AppCompatActivity {
         mWords.add(word + "-" + points);
         mWordCount = grabblePref.getInt(WORD_COUNT, 0);
         mViewPager.getAdapter().notifyDataSetChanged();
+        mViewPager.getChildAt(1).refreshDrawableState();
     }
 
     @Override

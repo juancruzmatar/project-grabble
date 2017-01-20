@@ -29,14 +29,13 @@ tools:context="com.s1451552.grabble.BackpackActivity">
             android:id="@+id/tab1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="LETTER BAG"
-            />
+            android:text="@string/tab_letter_bag" />
 
         <android.support.design.widget.TabItem
             android:id="@+id/tab2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="WORD BAG"
+            android:text="@string/tab_word_bag"
             />
 
     </android.support.design.widget.TabLayout>

@@ -36,42 +36,61 @@ public class WordViewAdapter extends ArrayAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        View row = convertView;
+        View rowView = convertView;
         ViewHolder holder = null;
 
-        if (row == null) {
-            LayoutInflater inflater = ((Activity) context).getLayoutInflater();
-            row = inflater.inflate(layoutResourceId, parent, false);
-            holder = new ViewHolder();
-            holder.imageTitle = (TextView) row.findViewById(R.id.word_text);
-            holder.imageList = (LinearLayout) row.findViewById(R.id.word_image_list);
-            row.setTag(holder);
-        } else {
-            holder = (ViewHolder) row.getTag();
-        }
-
+        Log.d("WordViewAdapter", "Word at " + position + ": " + data.get(position));
         String word = data.get(position).split("-")[0].toLowerCase();
         String amount = data.get(position).split("-")[1];
+        char[] chWord = word.toCharArray();
 
-        for (char l : word.toCharArray()) {
-            String resource = "letter_" + l;
-            int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+        if (rowView == null) {
+            LayoutInflater inflater = ((Activity) context).getLayoutInflater();
+            rowView = inflater.inflate(layoutResourceId, parent, false);
+            holder = new ViewHolder();
+            holder.imageTitle = (TextView) rowView.findViewById(R.id.word_text);
+            holder.imageList = (LinearLayout) rowView.findViewById(R.id.word_image_list);
+            rowView.setTag(holder);
 
-            ImageView letter = new ImageView(context);
+            for (int i = 0; i < 7; i++) {
+                String resource = "letter_" + chWord[i];
+                int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
-            Picasso.with(context)
-                    .load(imageId)
-                    .resize(120, 120)
-                    .centerCrop()
-                    .into(letter);
+                ImageView letter = new ImageView(context);
 
-            holder.imageList.addView(letter);
+                Picasso.with(context)
+                        .load(imageId)
+                        .resize(120, 120)
+                        .centerCrop()
+                        .into(letter);
+
+                holder.imageList.addView(letter);
+            }
+
+            holder.imageTitle.setText(amount);
+            holder.imageTitle.setTextSize(16);
+        } else {
+            rowView = (LinearLayout) convertView;
+            TextView imageTitle = (TextView) rowView.findViewById(R.id.word_text);
+            LinearLayout imageList = (LinearLayout) rowView.findViewById(R.id.word_image_list);
+
+            for (int i = 0; i < 7; i++) {
+                String resource = "letter_" + chWord[i];
+                int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+
+                ImageView letter = (ImageView) imageList.getChildAt(i);
+
+                Picasso.with(context)
+                        .load(imageId)
+                        .resize(120, 120)
+                        .centerCrop()
+                        .into(letter);
+            }
+
+            imageTitle.setText(amount);
+            imageTitle.setTextSize(16);
         }
-
-        holder.imageTitle.setText(amount);
-        holder.imageTitle.setTextSize(16);
-
-        return row;
+        return rowView;
     }
 
     static class ViewHolder {

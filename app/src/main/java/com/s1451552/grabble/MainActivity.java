@@ -1,6 +1,7 @@
 package com.s1451552.grabble;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,6 +18,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -27,9 +29,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -76,6 +80,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import javax.xml.parsers.SAXParser;
@@ -100,13 +105,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private static final int REQUEST_PERMISSIONS = 20;
     public static String PACKAGE_NAME;
 
+    /* Main preferences */
     SharedPreferences grabblePref;
     SharedPreferences letterlistPref;
     SharedPreferences wordlistPref;
     SharedPreferences settingsPref;
-    SharedPreferences.OnSharedPreferenceChangeListener prefListener;
 
-    /* Main preferences */
     public static final int DOESNT_EXIST = -1;
     public static final String preferences = "grabble_preferences";
     public static final String PREF_VERSION_CODE_KEY = "version_code";
@@ -131,6 +135,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
     private int dayHour;
     public static boolean isLightningMode;
+    public static boolean lightningModeCompleted;
     private static boolean isNightChecked;
     private static boolean isNightAuto;
 
@@ -159,15 +164,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
         wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
         settingsPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
         PACKAGE_NAME = getApplicationContext().getPackageName();
 
         dayHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
 
         // Init Nav Box night icon 'isChecked' value
         isNightChecked = false;
-        isNightAuto = settingsPref.getBoolean("nightmode_switch", true);
-        Log.d(this.toString(), String.valueOf(isNightAuto) + " - auto night change");
 
         setContentView(R.layout.activity_main);
 
@@ -180,6 +182,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         mapView = (MapView) findViewById(R.id.mapview);
         mapView.onCreate(savedInstanceState);
 
+        // Setting up side navigation menu
         mNavigationView = (NavigationView) findViewById(R.id.navigation);
         setupNavigationMenu();
 
@@ -290,9 +293,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         // Register daytime change receiver
         registerReceiver(mDaytimeReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
 
-        isNightAuto = settingsPref.getBoolean("nightmode_switch", true);
-        if (mNavigationView != null)
-            mNavigationView.getMenu().findItem(R.id.nav_nightmode).setVisible(!isNightAuto);
+        // Set map colours if night mode is set to auto
+        setMapColours();
     }
 
     @Override
@@ -497,15 +499,16 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         return "unchanged";
     }
 
-    private void initLetterMapLoad() {
+    public void initLetterMapLoad() {
         final String TAG = "initLetterMapLoad";
 
         // Stores the current day for the map update
         // and returns if the day has changed
-        final String newDay = storeCurrentWeekday();
+        String newDay = storeCurrentWeekday();
 
         if (!newDay.equals("unchanged")) {
             Log.d(TAG, "Date has changed, downloading new letter map...");
+
             // Launching the downloader for the map placemark data
             final AsyncTask<String, Integer, String> downloadTask = new DownloadTask(
                     new AsyncResponse() {
@@ -524,8 +527,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             });
         } else {
             // Points to the cached day and letter map
-            final String currentDay = grabblePref.getString("weekday", "empty");
-            final File letterMap = new File(getExternalFilesDir(null), "map.grabble");
+            String currentDay = grabblePref.getString("weekday", "empty");
+            File letterMap = new File(getExternalFilesDir(null), "map.grabble");
 
             if (letterMap.exists()) {
                 Log.d(TAG, "Date hasn't changed, letter map exists!");
@@ -773,12 +776,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 map = mapboxMap;
 
                 // Game styling requires map to be zoomed in
-                map.setMinZoom(19);
+                map.setMinZoom(18);
                 map.setMaxZoom(20);
 
                 // Enable user tracking to show the padding effect.
                 map.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
-                map.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.COMPASS);
+                map.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.GPS);
                 map.getTrackingSettings().setDismissAllTrackingOnGesture(false);
 
                 // Customize the user location icon using the getMyLocationViewSettings object.
@@ -786,6 +789,9 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 map.getMyLocationViewSettings().setForegroundTintColor(Color.parseColor("#efca5b"));
                 map.getMyLocationViewSettings().setAccuracyTintColor(0);
                 map.getMyLocationViewSettings().setAccuracyAlpha(1);
+
+                // Set map colours if night mode is set to auto
+                setMapColours();
 
                 // What does the application do when a marker is selected?
                 map.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener() {
@@ -810,6 +816,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 Toast.LENGTH_SHORT)
                 .show();
 
+        map.removeMarker(marker);
+
         if (mParsedMarkersRaw != null &&
                 mParsedMarkers != null &&
                 mParsedMarkers.contains(marker)) {
@@ -822,7 +830,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             int markerAtIndex = mParsedMarkers.indexOf(marker);
             mParsedMarkers.remove(marker);
             mParsedMarkersRaw.remove(markerAtIndex);
-            map.removeMarker(marker);
 
             // Do we need to store date for the letters acquired?
             // Long tsLong = System.currentTimeMillis()/1000;
@@ -866,6 +873,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 Marker marker = mParsedMarkers.get(markerAtIndex);
                 markerAtIndex++;
 
+                // Distance for being able to grab a letter: 10 meters
                 if (currentPos.distanceTo(m.getPosition()) <= 10) {
                     if (mParsedMarkersRaw != null &&
                             !mLettersAround.contains(marker)) {
@@ -873,6 +881,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                                 + ", at distance of: " + currentPos.distanceTo(m.getPosition()));
                         mLettersAround.add(marker);
                         map.addMarker(m);
+
+                        ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
                     }
                 } else {
                     if (mParsedMarkersRaw != null &&
@@ -907,16 +917,16 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         }
 
         dialogBuilder.setView(dialogList);
-        dialogBuilder.setTitle("Words you will need to find:");
+        dialogBuilder.setTitle(R.string.lightning_title);
         dialogBuilder.setIcon(getDrawable(R.drawable.ic_timer_black_24dp));
-        dialogBuilder.setNegativeButton("Maybe later...", new DialogInterface.OnClickListener() {
+        dialogBuilder.setNegativeButton(R.string.lightning_no, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
             }
         });
 
-        dialogBuilder.setPositiveButton("Let's go!", new DialogInterface.OnClickListener() {
+        dialogBuilder.setPositiveButton(R.string.lightning_yes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 isLightningMode = true;
@@ -934,15 +944,16 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 CountDownTimer ct =  new CountDownTimer(900000, 1) {
 
                     public void onTick(long mil) {
-                        String min = String.format("%02d", mil/60000);
-                        String sec = String.format("%02d", (int)((mil%60000)/1000));
-                        //String ms = String.format("%02d", (int) ((mil%1000)/10));
-                        mCountdown.setText(min + ":" + sec);
+                        String min = String.format(Locale.UK, "%02d", (int) mil/60000);
+                        String sec = String.format(Locale.UK, "%02d", (int) (mil%60000)/1000);
+                        String ms = String.format(Locale.UK, "%02d", (int) (mil % 1000)/10);
+
+                        mCountdown.setText(min + ":" + sec + ":" + ms);
                         mCountdown.setVisibility(View.VISIBLE);
 
                         mLightningButton.setClickable(false);
                         mLightningButton.setBackgroundTintList(
-                                ColorStateList.valueOf(getColor(R.color.transparent_grey)));
+                                ColorStateList.valueOf(getColor(R.color.grey_trans)));
 
                         if (!isLightningMode) {
                             this.onFinish();
@@ -956,8 +967,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         mLightningButton.setBackgroundTintList(
                                 ColorStateList.valueOf(getColor(R.color.accent)));
 
-                        isLightningMode = false;
-                        if (hasCompletedLightning()) {
+                        if (lightningModeCompleted) {
                             int prevScore = grabblePref.getInt(HIGHSCORE, 0);
                             int newScore = prevScore + 200;
 
@@ -967,18 +977,18 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
                             Toast.makeText(
                                     MainActivity.this,
-                                    ("You have completed the Lightning Mode and were " +
-                                            "awarded 200 extra points!"),
+                                    (R.string.lightning_toast_completed),
                                     Toast.LENGTH_LONG)
                                     .show();
                         } else {
                             Toast.makeText(
                                     MainActivity.this,
-                                    ("You have ran out of time for the Lightning Mode! " +
-                                            "Better luck next time..."),
+                                    (R.string.lightning_toast_not_completed),
                                     Toast.LENGTH_LONG)
                                     .show();
                         }
+
+                        findViewById(R.id.light_words).setVisibility(View.INVISIBLE);
 
                         grabblePref.edit()
                                 .remove(LIGHT_GOT)
@@ -1031,7 +1041,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     }
 
     private final DaytimeChangeReceiver mDaytimeReceiver = new DaytimeChangeReceiver();
-    public class DaytimeChangeReceiver extends BroadcastReceiver {
+    private class DaytimeChangeReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(final Context context, Intent intent) {
@@ -1049,41 +1059,20 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         }
     }
 
-    private int checkFirstRun() {
-        // Get current version code
-        int currentVersionCode = 0;
-        try {
-            currentVersionCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
-        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-            // handle exception
-            e.printStackTrace();
-            return -1;
+    private void setMapColours() {
+        isNightAuto = settingsPref.getBoolean("nightmode_switch", true);
+        if (mNavigationView != null)
+            mNavigationView.getMenu().findItem(R.id.nav_nightmode).setVisible(!isNightAuto);
+
+        if (isNightAuto && map != null) {
+            int currHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+            if (currHour >= 8 && currHour < 18) {
+                map.setStyleUrl(getString(R.string.mapref));
+            } else {
+                map.setStyleUrl(getString(R.string.mapref_night));
+            }
+        } else if (!isNightAuto && map != null) {
+            map.setStyleUrl(getString(R.string.mapref));
         }
-
-        // Get saved version code
-        int savedVersionCode = grabblePref.getInt(PREF_VERSION_CODE_KEY, DOESNT_EXIST);
-
-        // Check for first run or upgrade
-        if (currentVersionCode == savedVersionCode) {
-
-            // This is just a normal run
-            return 0;
-
-        } else if (savedVersionCode == DOESNT_EXIST) {
-
-            // This is a new install (or the user cleared the shared preferences),
-            // update the shared preferences with the current version code
-            grabblePref.edit().putInt(PREF_VERSION_CODE_KEY, currentVersionCode).apply();
-            return 1;
-
-        } else if (currentVersionCode > savedVersionCode) {
-
-            // This is an upgrade, update the shared preferences
-            // with the current version code
-            grabblePref.edit().putInt(PREF_VERSION_CODE_KEY, currentVersionCode).apply();
-            return 2;
-        }
-
-        return -1;
     }
 }

@@ -32,6 +32,7 @@ import static com.s1451552.grabble.MainActivity.LIGHT_GOT;
 import static com.s1451552.grabble.MainActivity.LIGHT_REQUIRED;
 import static com.s1451552.grabble.MainActivity.isLightningMode;
 import static com.s1451552.grabble.MainActivity.letter_list;
+import static com.s1451552.grabble.MainActivity.lightningModeCompleted;
 import static com.s1451552.grabble.MainActivity.preferences;
 import static com.s1451552.grabble.MainActivity.word_list;
 import static com.s1451552.grabble.SplashActivity.sWordlist;
@@ -292,15 +293,15 @@ public class LetterBagFragment extends Fragment {
 
                         grabblePref.edit().putStringSet(LIGHT_GOT, gotWords).apply();
 
-                        boolean completed = true;
+                        lightningModeCompleted = true;
                         for (String w : requiredWords) {
                             if (!gotWords.contains(w.toLowerCase())) {
-                                completed = false;
+                                lightningModeCompleted = false;
                                 break;
                             }
                         }
 
-                        if (completed) {
+                        if (lightningModeCompleted) {
                             isLightningMode = false;
                         }
                     }

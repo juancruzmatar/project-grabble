@@ -5,47 +5,61 @@
     android:layout_height="match_parent"
     android:weightSum="1">
 
-    <ImageView
-        android:layout_width="280dp"
-        android:layout_height="280dp"
-        app:srcCompat="@drawable/ic_grabble"
-        android:id="@+id/imageView"
-        android:gravity="center"
-        android:layout_gravity="center"
-        android:paddingLeft="30dp"
-        android:paddingRight="30dp" />
-
-    <TextView
-        android:text="Grabble"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/grabble_txt"
-        android:gravity="center"
-        android:layout_gravity="center"
-        android:textSize="18sp" />
+        android:layout_height="match_parent">
 
-    <TextView
-        android:text="version: 1.0-alpha.1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/version_txt"
-        android:gravity="center"
-        android:layout_gravity="center" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="40dp"
+            android:orientation="vertical">
 
-    <TextView
-        android:text="author: s1451552"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/author_txt"
-        android:gravity="center"
-        android:layout_gravity="center" />
+            <ImageView
+                android:layout_width="280dp"
+                android:layout_height="280dp"
+                app:srcCompat="@drawable/ic_grabble"
+                android:id="@+id/imageView"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:paddingLeft="30dp"
+                android:paddingRight="30dp" />
 
-    <TextView
-        android:text="disclaimer: this project is developed for educational purposes only."
-        android:layout_width="174dp"
-        android:layout_height="wrap_content"
-        android:id="@+id/disclaimer_txt"
-        android:gravity="center"
-        android:layout_gravity="center"
-        android:layout_marginTop="10dp" />
+            <TextView
+                android:text="@string/about_grabble"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/grabble_txt"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:textSize="18sp" />
+
+            <TextView
+                android:text="@string/about_version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/version_txt"
+                android:gravity="center"
+                android:layout_gravity="center" />
+
+            <TextView
+                android:text="@string/about_author"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/author_txt"
+                android:gravity="center"
+                android:layout_gravity="center" />
+
+            <TextView
+                android:text="@string/about_disclaimer"
+                android:layout_width="174dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/disclaimer_txt"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:layout_marginTop="10dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
 </LinearLayout>

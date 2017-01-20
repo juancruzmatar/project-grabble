@@ -12,9 +12,13 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.android.gms.location.places.Place;
 import com.squareup.picasso.Picasso;
+
+import java.util.List;
 
 /**
  * Created by Vytautas on 15/01/2017.
@@ -35,37 +39,52 @@ public class LightningDialogViewAdapter extends ArrayAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        View row = convertView;
+        View rowView = convertView;
         LinearLayout wordList = null;
 
-        if (row == null) {
+        if (rowView == null) {
             LayoutInflater inflater = ((Activity) context).getLayoutInflater();
-            row = inflater.inflate(layoutResourceId, parent, false);
-            wordList = (LinearLayout) row.findViewById(R.id.dialog_word_images);
-            row.setTag(wordList);
+            rowView = inflater.inflate(layoutResourceId, parent, false);
+            wordList = (LinearLayout) rowView.findViewById(R.id.dialog_word_images);
+            rowView.setTag(wordList);
+
+            Log.d("LightningDialogAdapter", "Word at " + position + ": " + data[position]);
+            String word = data[position].toLowerCase();
+
+            char[] chWord = word.toCharArray();
+            for (int i = 0; i < 7; i++) {
+                String resource = "letter_" + chWord[i];
+                int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+
+                ImageView letter = new ImageView(context);
+                letter.setForegroundGravity(Gravity.CENTER_HORIZONTAL);
+
+                Picasso.with(context)
+                        .load(imageId)
+                        .resize(100, 100)
+                        .centerCrop()
+                        .into(letter);
+
+                wordList.addView(letter);
+            }
         } else {
-            wordList = (LinearLayout) row.getTag();
+            wordList = (LinearLayout) convertView;
+
+            String word = data[position].toLowerCase();
+            char[] chWord = word.toCharArray();
+            for (int i = 0; i < 7; i++) {
+                String resource = "letter_" + chWord[i];
+                int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
+
+                ImageView letter = (ImageView) wordList.getChildAt(i);
+
+                Picasso.with(context)
+                        .load(imageId)
+                        .resize(100, 100)
+                        .centerCrop()
+                        .into(letter);
+            }
         }
-
-        Log.d("LightningDialogAdapter", "Word at " + position + ": " + data[position]);
-
-        String word = data[position].toLowerCase();
-
-        for (char l : word.toCharArray()) {
-            String resource = "letter_" + l;
-            int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
-
-            ImageView letter = new ImageView(context);
-
-            Picasso.with(context)
-                    .load(imageId)
-                    .resize(100, 100)
-                    .centerCrop()
-                    .into(letter);
-
-            wordList.addView(letter);
-        }
-
-        return row;
+        return wordList;
     }
 }
