@@ -936,8 +936,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                     public void onTick(long mil) {
                         String min = String.format("%02d", mil/60000);
                         String sec = String.format("%02d", (int)((mil%60000)/1000));
-                        String ms = String.format("%02d", (int) ((mil%1000)/10));
-                        mCountdown.setText(min + ":" + sec + ":" + ms);
+                        //String ms = String.format("%02d", (int) ((mil%1000)/10));
+                        mCountdown.setText(min + ":" + sec);
                         mCountdown.setVisibility(View.VISIBLE);
 
                         mLightningButton.setClickable(false);

@@ -56,10 +56,16 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="12dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
         android:visibility="invisible"
         android:textSize="48sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
         android:textColor="@color/transparent_grey"
+        android:background="@drawable/shape_corners"
         android:id="@+id/countdown" />
 
     <LinearLayout
@@ -67,36 +73,43 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/countdown"
+        android:layout_marginTop="6dp"
         android:visibility="invisible"
         android:orientation="vertical"
         android:id="@+id/light_words">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="160dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
+            android:gravity="center"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
             android:textColor="@color/transparent_grey"
             android:clickable="false"
             android:id="@+id/light_word1" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="160dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
+            android:gravity="center"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
             android:textColor="@color/transparent_grey"
             android:clickable="false"
             android:id="@+id/light_word2" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="160dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
+            android:gravity="center"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
             android:textColor="@color/transparent_grey"
             android:clickable="false"
             android:id="@+id/light_word3" />
