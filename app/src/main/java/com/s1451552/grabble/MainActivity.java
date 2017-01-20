@@ -1,7 +1,6 @@
 package com.s1451552.grabble;
 
 import android.Manifest;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,10 +11,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -30,12 +27,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.view.DragEvent;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -50,8 +44,6 @@ import com.google.android.gms.location.LocationRequest;
 
 import com.google.android.gms.location.LocationServices;
 import com.mapbox.mapboxsdk.MapboxAccountManager;
-import com.mapbox.mapboxsdk.annotations.Icon;
-import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
@@ -82,12 +74,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.prefs.PreferenceChangeEvent;
-import java.util.prefs.PreferenceChangeListener;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -132,8 +121,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     public static final String letter_list = "grabble_letterlist";
     public static final String word_list = "grabble_wordlist";
 
-    public static boolean isLightningMode;
-
     private MapView mapView;
     private NavigationView mNavigationView;
     private ProgressDialog mProgressDialog;
@@ -142,17 +129,20 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private TextView mCountdown;
     private ActionBar mActionBar;
 
-    private MapboxMap map;
     private int dayHour;
+    public static boolean isLightningMode;
     private static boolean isNightChecked;
     private static boolean isNightAuto;
+
+    private MapboxMap map;
     private CameraPosition position;
 
     Location mLastLocation;
     Location mOldLocation;
-
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
+
+    private String[] mLightningWords;
     private ArrayList<MarkerViewOptions> mParsedMarkersRaw;
     private ArrayList<Marker> mParsedMarkers;
     private ArrayList<Marker> mLettersAround;
@@ -898,15 +888,17 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     }
 
     private void startLightningMode() {
-        String[] words = getRandomWords();
-        Set<String> wordset = new HashSet<>(Arrays.asList(words));
+        if (mLightningWords == null)
+            setRandomWords();
+
+        Set<String> wordset = new HashSet<>(Arrays.asList(mLightningWords));
         grabblePref.edit().putStringSet(LIGHT_REQUIRED, wordset).apply();
 
         View dialogView = getLayoutInflater().inflate(R.layout.fragment_dialoglist, null);
         ListView dialogList = (ListView) dialogView.findViewById(R.id.dialog_word_list);
         dialogList.setAdapter(
                 new LightningDialogViewAdapter(
-                        MainActivity.this, R.layout.layout_dialoglistitem, words)
+                        MainActivity.this, R.layout.layout_dialoglistitem, mLightningWords)
         );
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(MainActivity.this);
 
@@ -928,7 +920,18 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 isLightningMode = true;
-                CountDownTimer ct =  new CountDownTimer(100000, 1) {
+
+                TextView lightWord1 = (TextView) findViewById(R.id.light_word1);
+                TextView lightWord2 = (TextView) findViewById(R.id.light_word2);
+                TextView lightWord3 = (TextView) findViewById(R.id.light_word3);
+
+                lightWord1.setText(mLightningWords[0].toUpperCase());
+                lightWord2.setText(mLightningWords[1].toUpperCase());
+                lightWord3.setText(mLightningWords[2].toUpperCase());
+
+                findViewById(R.id.light_words).setVisibility(View.VISIBLE);
+
+                CountDownTimer ct =  new CountDownTimer(900000, 1) {
 
                     public void onTick(long mil) {
                         String min = String.format("%02d", mil/60000);
@@ -982,6 +985,9 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                                 .remove(LIGHT_REQUIRED)
                                 .apply();
 
+                        // Make a new set of random words
+                        setRandomWords();
+
                         this.cancel();
                     }
                 };
@@ -994,7 +1000,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         mLightningDialog.show();
     }
 
-    private String[] getRandomWords() {
+    private void setRandomWords() {
         int wordlistSize = sWordlist.size();
         int[] indices = new int[3];
         String[] words = new String[3];
@@ -1006,7 +1012,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         for (int i = 0; i < 3; i++) {
             words[i] = sWordlist.get(indices[i]);
         }
-        return words;
+        mLightningWords = words;
     }
 
     private boolean hasCompletedLightning() {
