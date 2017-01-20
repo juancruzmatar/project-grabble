@@ -49,6 +49,7 @@ public class LetterBagFragment extends Fragment {
     SharedPreferences wordlistPref;
 
     public static final String WORD_COUNT = "word_count";
+    public static final String TAG = "LetterBagFragment";
 
     private static final ArrayList<String> sSuccessMessages =
             new ArrayList<>(Arrays.asList(
@@ -113,132 +114,12 @@ public class LetterBagFragment extends Fragment {
 
         mBtnGrabble = (Button) rootView.findViewById(R.id.btn_grabble);
 
-        /**
-         * Checks if boxes are full and then searches for
-         * the word in the word list using binary search.
-         */
         mBtnGrabble.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                boolean boxesFull = mImageBoxes.get(0).getDrawable() != null &&
-                        mImageBoxes.get(1).getDrawable() != null &&
-                        mImageBoxes.get(2).getDrawable() != null &&
-                        mImageBoxes.get(3).getDrawable() != null &&
-                        mImageBoxes.get(4).getDrawable() != null &&
-                        mImageBoxes.get(5).getDrawable() != null &&
-                        mImageBoxes.get(6).getDrawable() != null;
-
-                if (boxesFull) {
-                    StringBuilder wordBuilder = new StringBuilder();
-                    for (ImageView image : mImageBoxes) {
-                        wordBuilder.append(mLettersInBoxes.get(image).split("-")[0]);
-                    }
-                    String word = wordBuilder.toString();
-
-                    WordComparator comp = new WordComparator();
-                    int index = Collections.binarySearch(sWordlist, word, comp);
-                    Log.d("mBtnGrabble", "Binary search in wordlist resulted in index: " + index);
-
-                    if (index > -1) {
-                        if (wordlistPref.contains(word)) {
-                            Toast.makeText(
-                                    getContext(),
-                                    ("You already have such word, friend! :-)"),
-                                    Toast.LENGTH_SHORT)
-                                    .show();
-                        } else {
-                            int totalPoints = 0;
-                            for (int i = 0; i < 7; i++) {
-                                String letter = String.valueOf(word.charAt(i));
-                                int letterId = getResources().getIdentifier(letter, "string", getContext().getPackageName());
-                                int points = Integer.parseInt(getResources().getString(letterId));
-                                totalPoints += points;
-
-                                int currLetterAmount = letterlistPref.getInt(letter, -1);
-                                if (currLetterAmount > 0) {
-                                    currLetterAmount -= 1;
-                                    letterlistPref.edit().putInt(letter, currLetterAmount).apply();
-                                }
-                            }
-
-                            for (ImageView image : mImageBoxes) {
-                                image.setImageDrawable(null);
-                                image.refreshDrawableState();
-                            }
-
-                            int msgIndex = (int) (Math.random() * 5);
-
-                            Toast.makeText(
-                                    getContext(),
-                                    (sSuccessMessages.get(msgIndex)
-                                            + " You just got " + totalPoints + " points!"),
-                                    Toast.LENGTH_SHORT)
-                                    .show();
-
-                            Log.d("btnGrabbleOnClick", word + " " + totalPoints);
-                            wordlistPref.edit().putInt(word, totalPoints).apply();
-
-                            int prevScore = grabblePref.getInt(HIGHSCORE, 0);
-                            int newScore = prevScore + totalPoints;
-
-                            Log.d("btnGrabbleOnClick", "Highscore: " + newScore);
-                            grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
-
-                            if (isLightningMode) {
-                                Set<String> requiredWords = grabblePref.getStringSet(LIGHT_REQUIRED, null);
-                                Set<String> gotWords = grabblePref.getStringSet(LIGHT_GOT, null);
-
-                                if (gotWords == null)
-                                    gotWords = new HashSet<>();
-
-                                gotWords.add(word.toLowerCase());
-                                Log.d("btnGrabbleOnClick", "Lightning mode! Currently have words: "
-                                        + gotWords.toString());
-
-                                grabblePref.edit().putStringSet(LIGHT_GOT, gotWords).apply();
-
-                                boolean completed = true;
-                                for (String w : requiredWords) {
-                                    if (!gotWords.contains(w.toLowerCase())) {
-                                        completed = false;
-                                        break;
-                                    }
-                                }
-
-                                if (completed) {
-                                    isLightningMode = false;
-                                }
-                            }
-
-                            int count;
-                            if (wordlistPref.getAll() != null) {
-                                count = wordlistPref.getAll().size();
-                            } else {
-                                count = 1;
-                            }
-                            Log.d("btnGrabbleOnClick", "Total word count: " + count);
-                            grabblePref.edit().putInt(WORD_COUNT, count).apply();
-
-                            // Update WordBag fragment view with the new word
-                            ((BackpackActivity) getActivity()).addWord(word, totalPoints);
-                        }
-                    } else {
-                        Toast.makeText(
-                                getContext(),
-                                ("Sorry friend, there is no such word :-("),
-                                Toast.LENGTH_SHORT)
-                                .show();
-                    }
-                } else {
-                    Toast.makeText(
-                            getContext(),
-                            ("Aren\'t you missing any letters?"),
-                            Toast.LENGTH_SHORT)
-                            .show();
-                }
+                formTheWord();
             }
         });
-
 
         /**
          * TODO: bug!!! letters come back repeated
@@ -251,20 +132,38 @@ public class LetterBagFragment extends Fragment {
                 public void onClick(View v) {
                     ImageView image = (ImageView) v;
                     if (image.getDrawable() != null) {
-                        String letter = mLettersInBoxes.get(image).split("-")[0];
-                        int amount = Integer.parseInt(mLettersInBoxes.get(image).split("-")[1]);
+                        String letter = mLettersInBoxes.get(image);
+                        String oldLetter = null;
+
+                        for (String item : mLetters) {
+                            if (item.split("-")[0].equals(letter)) {
+                                oldLetter = item;
+                                break;
+                            }
+                        }
+
+                        if (oldLetter == null) {
+                            oldLetter = letter + "-0";
+                        }
+
+                        int amount = Integer.parseInt(oldLetter.split("-")[1]);
+
                         amount = amount + 1;
                         String sAmount = String.valueOf(amount);
                         String updatedLetter = letter + "-" + sAmount;
 
-                        if (amount > 1)
-                            mLetters.remove(mLettersInBoxes.get(image));
+                        if (amount > 1) {
+                            int oldIndex = mLetters.indexOf(oldLetter);
+                            mLetters.remove(oldIndex);
+                            mLetters.add(oldIndex, updatedLetter);
+                        } else {
+                            mLetters.add(updatedLetter);
+                        }
 
-                        mLetters.add(updatedLetter);
                         mLettersInBoxes.remove(image);
+                        image.setImageDrawable(null);
 
                         ((BaseAdapter) mGridView.getAdapter()).notifyDataSetChanged();
-                        image.setImageDrawable(null);
                     }
                 }
             });
@@ -278,7 +177,7 @@ public class LetterBagFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String resource = "letter_" + mLetters.get(position).split("-")[0].toLowerCase();
-                Log.d("LetterBagFragment", "Clicked on: " + resource);
+                Log.d(TAG, "Clicked on: " + resource);
                 int imId = getContext().getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
                 for (ImageView image : mImageBoxes) {
@@ -291,16 +190,16 @@ public class LetterBagFragment extends Fragment {
 
                         String letter = mLetters.get(position).split("-")[0];
                         int amount = Integer.parseInt(mLetters.get(position).split("-")[1]);
+                        Log.d(TAG, "Current amount of letter " + letter + ": " + amount);
 
                         amount = amount - 1;
                         String sAmount = String.valueOf(amount);
                         String updatedLetter = letter + "-" + sAmount;
 
-                        mLettersInBoxes.put(image, updatedLetter);
                         mLetters.remove(position);
-
                         if (amount > 0)
                             mLetters.add(position, updatedLetter);
+                        mLettersInBoxes.put(image, letter);
 
                         ((BaseAdapter) mGridView.getAdapter()).notifyDataSetChanged();
                         break;
@@ -310,6 +209,129 @@ public class LetterBagFragment extends Fragment {
         });
 
         return rootView;
+    }
+
+    /**
+     * Checks if boxes are full and then searches for
+     * the word in the word list using binary search.
+     */
+    private void formTheWord() {
+        boolean boxesFull = mImageBoxes.get(0).getDrawable() != null &&
+                mImageBoxes.get(1).getDrawable() != null &&
+                mImageBoxes.get(2).getDrawable() != null &&
+                mImageBoxes.get(3).getDrawable() != null &&
+                mImageBoxes.get(4).getDrawable() != null &&
+                mImageBoxes.get(5).getDrawable() != null &&
+                mImageBoxes.get(6).getDrawable() != null;
+
+        if (boxesFull) {
+            StringBuilder wordBuilder = new StringBuilder();
+            for (ImageView image : mImageBoxes) {
+                wordBuilder.append(mLettersInBoxes.get(image).split("-")[0]);
+            }
+            String word = wordBuilder.toString();
+
+            WordComparator comp = new WordComparator();
+            int index = Collections.binarySearch(sWordlist, word, comp);
+            Log.d(TAG, "Binary search in wordlist resulted in index: " + index);
+
+            if (index > -1) {
+                if (wordlistPref.contains(word)) {
+                    Toast.makeText(
+                            getContext(),
+                            ("You already have such word, friend! :-)"),
+                            Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    int totalPoints = 0;
+                    for (int i = 0; i < 7; i++) {
+                        String letter = String.valueOf(word.charAt(i));
+                        int letterId = getResources().getIdentifier(letter, "string", getContext().getPackageName());
+                        int points = Integer.parseInt(getResources().getString(letterId));
+                        totalPoints += points;
+
+                        int currLetterAmount = letterlistPref.getInt(letter, -1);
+                        if (currLetterAmount > 0) {
+                            currLetterAmount -= 1;
+                            letterlistPref.edit().putInt(letter, currLetterAmount).apply();
+                        }
+                    }
+
+                    for (ImageView image : mImageBoxes) {
+                        image.setImageDrawable(null);
+                        image.refreshDrawableState();
+                    }
+
+                    int msgIndex = (int) (Math.random() * 5);
+
+                    Toast.makeText(
+                            getContext(),
+                            (sSuccessMessages.get(msgIndex)
+                                    + " You just got " + totalPoints + " points!"),
+                            Toast.LENGTH_SHORT)
+                            .show();
+
+                    Log.d(TAG, word + " " + totalPoints);
+                    wordlistPref.edit().putInt(word, totalPoints).apply();
+
+                    int prevScore = grabblePref.getInt(HIGHSCORE, 0);
+                    int newScore = prevScore + totalPoints;
+
+                    Log.d(TAG, "Highscore: " + newScore);
+                    grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
+
+                    if (isLightningMode) {
+                        Set<String> requiredWords = grabblePref.getStringSet(LIGHT_REQUIRED, null);
+                        Set<String> gotWords = grabblePref.getStringSet(LIGHT_GOT, null);
+
+                        if (gotWords == null)
+                            gotWords = new HashSet<>();
+
+                        gotWords.add(word.toLowerCase());
+                        Log.d(TAG, "Lightning mode! Currently have words: "
+                                + gotWords.toString());
+
+                        grabblePref.edit().putStringSet(LIGHT_GOT, gotWords).apply();
+
+                        boolean completed = true;
+                        for (String w : requiredWords) {
+                            if (!gotWords.contains(w.toLowerCase())) {
+                                completed = false;
+                                break;
+                            }
+                        }
+
+                        if (completed) {
+                            isLightningMode = false;
+                        }
+                    }
+
+                    int count;
+                    if (wordlistPref.getAll() != null) {
+                        count = wordlistPref.getAll().size();
+                    } else {
+                        count = 1;
+                    }
+                    Log.d(TAG, "Total word count: " + count);
+                    grabblePref.edit().putInt(WORD_COUNT, count).apply();
+
+                    // Update WordBag fragment view with the new word
+                    ((BackpackActivity) getActivity()).addWord(word, totalPoints);
+                }
+            } else {
+                Toast.makeText(
+                        getContext(),
+                        ("Sorry friend, there is no such word :-("),
+                        Toast.LENGTH_SHORT)
+                        .show();
+            }
+        } else {
+            Toast.makeText(
+                    getContext(),
+                    ("Aren\'t you missing any letters?"),
+                    Toast.LENGTH_SHORT)
+                    .show();
+        }
     }
 
     /**

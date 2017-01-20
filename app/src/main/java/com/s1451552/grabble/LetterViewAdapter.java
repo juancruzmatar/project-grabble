@@ -12,6 +12,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import java.util.ArrayList;
 
 /**
@@ -53,12 +55,14 @@ public class LetterViewAdapter extends ArrayAdapter {
         String resource = "letter_" + letter;
         int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
-        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageId);
-        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true);
+        Picasso.with(getContext())
+                .load(imageId)
+                .resize(120, 120)
+                .centerCrop()
+                .into(holder.image);
 
         holder.imageTitle.setText(amount);
         holder.imageTitle.setTextSize(16);
-        holder.image.setImageBitmap(scaled);
 
         return row;
     }
