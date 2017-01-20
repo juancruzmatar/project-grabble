@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -70,7 +71,7 @@ public class WordViewAdapter extends ArrayAdapter {
             holder.imageTitle.setText(amount);
             holder.imageTitle.setTextSize(16);
         } else {
-            rowView = (LinearLayout) convertView;
+            rowView = (RelativeLayout) convertView;
             TextView imageTitle = (TextView) rowView.findViewById(R.id.word_text);
             LinearLayout imageList = (LinearLayout) rowView.findViewById(R.id.word_image_list);
 
