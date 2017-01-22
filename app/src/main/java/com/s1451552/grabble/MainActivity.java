@@ -46,7 +46,6 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.mapbox.mapboxsdk.MapboxAccountManager;
 import com.mapbox.mapboxsdk.annotations.Marker;
-import com.mapbox.mapboxsdk.annotations.MarkerView;
 import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -77,7 +76,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -330,8 +328,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 Log.w(TAG, "Tried to unregister the receiver when it's not registered");
             } else { throw e; }
         }
-
-        this.writeLetterMap();
     }
 
     @Override
@@ -348,11 +344,11 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
-        mapView.onDestroy();
-
         // Save the already *used* letter map.
         this.writeLetterMap();
+
+        super.onDestroy();
+        mapView.onDestroy();
 
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
@@ -881,25 +877,31 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             mParsedMarkers.remove(marker);
             mParsedMarkersRaw.remove(markerAtIndex);
 
-            SharedPreferences.Editor editor = letterlistPref.edit();
-
+            // Add the letter to the shared letter list
             int currentCount = letterlistPref.getInt(marker.getTitle(), -1);
             if (currentCount != -1) {
                 currentCount = currentCount + 1;
-                editor.remove(marker.getTitle()).apply();
-                editor.putInt(marker.getTitle(), currentCount).apply();
+                letterlistPref.edit()
+                        .remove(marker.getTitle())
+                        .putInt(marker.getTitle(), currentCount)
+                        .apply();
             } else {
-                editor.putInt(marker.getTitle(), 1).apply();
+                letterlistPref.edit().putInt(marker.getTitle(), 1).apply();
             }
 
+            // If Lightning mode is on, add that letter to a separate shared list.
+            // Can now keep track which letters will need to go after
+            // the game mode finishes.
             if (isLightningMode) {
                 int currentLightCount = lightLetterlistPref.getInt(marker.getTitle(), -1);
                 if (currentLightCount != -1) {
                     currentLightCount = currentLightCount + 1;
-                    editor.remove(marker.getTitle()).apply();
-                    editor.putInt(marker.getTitle(), currentLightCount).apply();
+                    lightLetterlistPref.edit()
+                            .remove(marker.getTitle())
+                            .putInt(marker.getTitle(), currentLightCount)
+                            .apply();
                 } else {
-                    editor.putInt(marker.getTitle(), 1).apply();
+                    lightLetterlistPref.edit().putInt(marker.getTitle(), 1).apply();
                 }
             }
 
@@ -910,7 +912,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 count = 1;
             }
             grabblePref.edit().putInt(LETTER_COUNT, count).apply();
-            Log.d("collectLetter", "Current captured letter count: " + String.valueOf(count));
+            Log.d("collectLetter", "Current captured letter count: " + marker.getTitle()
+                     + String.valueOf(currentCount));
 
         } else {
             Log.e("collectLetter", "No such marker in parsed markers array!");
@@ -1033,7 +1036,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         findViewById(R.id.light_words).setVisibility(View.VISIBLE);
 
         // Set up the timer and design
-        CountDownTimer ct = new CountDownTimer(900000, 1) {
+        CountDownTimer ct = new CountDownTimer(10000, 1) {
 
             public void onTick(long mil) {
                 String min = String.format(Locale.UK, "%02d", (int) mil/60000);
@@ -1092,8 +1095,9 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         .remove(LIGHT_REQUIRED)
                         .apply();
 
-                // TODO: remove letters collected during lightning mode
-
+                // Remove all letters collected during the game mode.
+                // Does not make a difference to the words.
+                removeLightningLetters();
                 // Make a new set of random words
                 setRandomWords();
 
@@ -1101,6 +1105,24 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             }
         };
         ct.start();
+    }
+
+    private void removeLightningLetters() {
+        for (int i = 65; i <= 90; i++) {
+            String letter = String.valueOf((char) i);
+            int count = letterlistPref.getInt(letter, -1);
+            if (count > 0) {
+                int lCount = lightLetterlistPref.getInt(letter, -1);
+                if (lCount > 0) {
+                    count = count - lCount;
+                    letterlistPref.edit()
+                            .remove(letter)
+                            .putInt(letter, count)
+                            .apply();
+                }
+            }
+        }
+        lightLetterlistPref.edit().clear().apply();
     }
 
     private class DaytimeChangeReceiver extends BroadcastReceiver {

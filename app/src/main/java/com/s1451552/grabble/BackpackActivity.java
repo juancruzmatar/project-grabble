@@ -110,14 +110,15 @@ public class BackpackActivity extends AppCompatActivity {
     private void parseLetters() {
         mLetters = new ArrayList<>();
         for (int i = 65; i <= 90; i++) {
-            int lCount = letterlistPref.getInt(String.valueOf((char)i), -1);
+            String letter = String.valueOf((char)i);
+            int lCount = letterlistPref.getInt(letter, -1);
             if (lCount > 0) {
                 /**
                  * Formatting of collected letters and their quantities
                  * follows this example pattern: A-5.
                  * It's used for relatively simple string splitting.
                  */
-                mLetters.add(String.valueOf((char)i) + "-" + lCount);
+                mLetters.add(letter + "-" + lCount);
             }
             // TESTING
             // mLetters.add(String.valueOf((char)i) + "-" + 10);

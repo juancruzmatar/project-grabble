@@ -33,6 +33,7 @@ import static com.s1451552.grabble.MainActivity.LIGHT_REQUIRED;
 import static com.s1451552.grabble.MainActivity.isLightningMode;
 import static com.s1451552.grabble.MainActivity.letter_list;
 import static com.s1451552.grabble.MainActivity.lightningModeCompleted;
+import static com.s1451552.grabble.MainActivity.lightning_letter_list;
 import static com.s1451552.grabble.MainActivity.preferences;
 import static com.s1451552.grabble.MainActivity.word_list;
 import static com.s1451552.grabble.SplashActivity.sWordlist;
@@ -48,6 +49,7 @@ public class LetterBagFragment extends Fragment {
 
     SharedPreferences grabblePref;
     SharedPreferences letterlistPref;
+    SharedPreferences lightLetterlistPref;
     SharedPreferences wordlistPref;
 
     public static final String WORD_COUNT = "word_count";
@@ -106,6 +108,7 @@ public class LetterBagFragment extends Fragment {
 
         grabblePref = getContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
         letterlistPref = getContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
+        lightLetterlistPref = getContext().getSharedPreferences(lightning_letter_list, Context.MODE_PRIVATE);
         wordlistPref = getContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
 
         mLetters = getArguments().getStringArrayList("letters");
@@ -198,10 +201,16 @@ public class LetterBagFragment extends Fragment {
                         int points = Integer.parseInt(getResources().getString(letterId));
                         totalPoints += points;
 
+                        // Remove the letter from main list and lightning mode list
                         int currLetterAmount = letterlistPref.getInt(letter, -1);
                         if (currLetterAmount > 0) {
                             currLetterAmount -= 1;
                             letterlistPref.edit().putInt(letter, currLetterAmount).apply();
+                        }
+                        int lightLetterAmount = lightLetterlistPref.getInt(letter, -1);
+                        if (lightLetterAmount > 0) {
+                            lightLetterAmount -= 1;
+                            lightLetterlistPref.edit().putInt(letter, lightLetterAmount).apply();
                         }
                     }
 
