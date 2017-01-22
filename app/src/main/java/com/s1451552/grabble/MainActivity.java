@@ -114,6 +114,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     /* Main shared preferences */
     SharedPreferences grabblePref;
     SharedPreferences letterlistPref;
+    SharedPreferences lightLetterlistPref;
     SharedPreferences wordlistPref;
     SharedPreferences settingsPref;
 
@@ -129,6 +130,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
     /* Gameplay data (letters, words, etc) */
     public static final String letter_list = "grabble_letterlist";
+    public static final String lightning_letter_list = "grabble_light_letterlist";
     public static final String word_list = "grabble_wordlist";
 
     /* Layout items */
@@ -174,6 +176,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         // Getting stored preferences.
         grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
         letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
+        lightLetterlistPref = getApplicationContext().getSharedPreferences(lightning_letter_list, Context.MODE_PRIVATE);
         wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
         settingsPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         PACKAGE_NAME = getApplicationContext().getPackageName();
@@ -879,6 +882,17 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 editor.putInt(marker.getTitle(), 1).apply();
             }
 
+            if (isLightningMode) {
+                int currentLightCount = lightLetterlistPref.getInt(marker.getTitle(), -1);
+                if (currentLightCount != -1) {
+                    currentLightCount = currentLightCount + 1;
+                    editor.remove(marker.getTitle()).apply();
+                    editor.putInt(marker.getTitle(), currentLightCount).apply();
+                } else {
+                    editor.putInt(marker.getTitle(), 1).apply();
+                }
+            }
+
             int count;
             if (letterlistPref.getAll() != null) {
                 count = letterlistPref.getAll().size();
@@ -1067,6 +1081,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         .remove(LIGHT_GOT)
                         .remove(LIGHT_REQUIRED)
                         .apply();
+
+                // TODO: remove letters collected during lightning mode
 
                 // Make a new set of random words
                 setRandomWords();
