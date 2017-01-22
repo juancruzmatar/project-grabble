@@ -140,7 +140,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private FloatingActionButton mLightningButton;
     private TextView mCountdown;
 
-
     /* Variables dealing with auto / manual night mode */
     private final DaytimeChangeReceiver mDaytimeReceiver = new DaytimeChangeReceiver();
     private int dayHour;
@@ -1010,7 +1009,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         findViewById(R.id.light_words).setVisibility(View.VISIBLE);
 
         // Set up the timer and design
-        CountDownTimer ct =  new CountDownTimer(900000, 1) {
+        CountDownTimer ct = new CountDownTimer(900000, 1) {
 
             public void onTick(long mil) {
                 String min = String.format(Locale.UK, "%02d", (int) mil/60000);
@@ -1087,10 +1086,10 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             int currHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             if (currHour != dayHour && currHour == 8) {
                 Log.d("DaytimeChangeReceiver", "Daytime changed, it's the dawn");
-                map.setStyleUrl(getString(R.string.mapref));
+                map.setStyleUrl(getString(R.string.mapbox_mapref));
             } else if (currHour != dayHour && currHour == 18) {
                 Log.d("DaytimeChangeReceiver", "Daytime changed, it's the sunset");
-                map.setStyleUrl(getString(R.string.mapref_night));
+                map.setStyleUrl(getString(R.string.mapbox_mapref_night));
             }
             dayHour = currHour;
         }
