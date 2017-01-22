@@ -24,27 +24,30 @@ import static com.s1451552.grabble.MainActivity.letter_list;
 import static com.s1451552.grabble.MainActivity.preferences;
 import static com.s1451552.grabble.MainActivity.word_list;
 
+/**
+ * Activity, that will display two tabbed fragments:
+ * {@link LetterBagFragment} and {@link WordBagFragment}.
+ * Upon initialization it is collecting the letter data here.
+ */
+
 public class BackpackActivity extends AppCompatActivity {
 
     SharedPreferences grabblePref;
     SharedPreferences letterlistPref;
     SharedPreferences wordlistPref;
 
-    private ActionBar mActionBar;
     /**
      * The {@link TabLayout} that show the section tabs.
      */
-    private TabLayout mTabLayout;
+    TabLayout mTabLayout;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
      * fragments for each of the sections. We use a
      * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
+     * loaded fragment in memory.
      */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
+    SectionsPagerAdapter mSectionsPagerAdapter;
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -67,17 +70,16 @@ public class BackpackActivity extends AppCompatActivity {
         letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
         wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
 
+        // Get the total letter and word count
+        // to display along the tab names.
         mLetterCount = grabblePref.getInt(LETTER_COUNT, 0);
         mWordCount = grabblePref.getInt(WORD_COUNT, 0);
 
+        // Parse letter and word data from SharedPreferences.
         parseLetters();
         parseWords();
 
-        mActionBar = getSupportActionBar();
-        if (mActionBar != null) {
-            // Show the Up button in the action bar.
-            mActionBar.setDisplayHomeAsUpEnabled(true);
-        }
+        setupActionBar();
 
         // Create the adapter that will return a fragment for each of the two
         // primary sections of the activity.
@@ -92,13 +94,29 @@ public class BackpackActivity extends AppCompatActivity {
     }
 
     /**
-     * Get collected letters from the SharedPreferences
+     * Set up the {@link android.app.ActionBar}, if the API is available.
+     */
+    private void setupActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            // Show the Up button in the action bar.
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    /**
+     * Get collected letters from the SharedPreferences.
      */
     private void parseLetters() {
         mLetters = new ArrayList<>();
         for (int i = 65; i <= 90; i++) {
             int lCount = letterlistPref.getInt(String.valueOf((char)i), -1);
             if (lCount > 0) {
+                /**
+                 * Formatting of collected letters and their quantities
+                 * follows this example pattern: A-5.
+                 * It's used for relatively simple string splitting.
+                 */
                 mLetters.add(String.valueOf((char)i) + "-" + lCount);
             }
             // TESTING
@@ -107,7 +125,7 @@ public class BackpackActivity extends AppCompatActivity {
     }
 
     /**
-     * Get collected words from the SharedPreferences
+     * Get collected words from the SharedPreferences.
      */
     private void parseWords() {
         mWords = new ArrayList<>();
@@ -115,13 +133,18 @@ public class BackpackActivity extends AppCompatActivity {
         for (Map.Entry<String, ?> entry : words.entrySet()) {
             String word = entry.getKey();
             int points = Integer.parseInt(entry.getValue().toString());
+            /**
+             * Formatting of formed words and their point values
+             * follows this example pattern: STUDENT-40.
+             * It's used for relatively simple string splitting.
+             */
             mWords.add(word + "-" + points);
         }
     }
 
     /**
-     * Update the WordBag view once a new word is added
-     * Called from {@link LetterBagFragment}
+     * Update the WordBag view once a new word is added.
+     * Called from {@link LetterBagFragment}.
      */
     public void addWord(String word, int points) {
         mWords.add(word + "-" + points);
@@ -173,6 +196,8 @@ public class BackpackActivity extends AppCompatActivity {
 
         @Override
         public CharSequence getPageTitle(int position) {
+            // For a tab, the example format of it's title is:
+            // Letter Bag (5)
             switch (position) {
                 case 0:
                     return ("Letter Bag (" + mLetterCount + ")");

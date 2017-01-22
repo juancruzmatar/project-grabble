@@ -2,8 +2,6 @@ package com.s1451552.grabble;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,7 +17,8 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 
 /**
- * Created by Vytautas on 12/01/2017.
+ * ArrayAdapter to display words as lists of letters
+ * in the Lightning Mode dialog.
  */
 
 public class WordViewAdapter extends ArrayAdapter {

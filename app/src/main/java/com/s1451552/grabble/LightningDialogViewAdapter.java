@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -21,7 +22,8 @@ import com.squareup.picasso.Picasso;
 import java.util.List;
 
 /**
- * Created by Vytautas on 15/01/2017.
+ * ArrayAdapter to display words as lists of letters
+ * in the Lightning Mode dialog.
  */
 
 public class LightningDialogViewAdapter extends ArrayAdapter {
@@ -30,11 +32,11 @@ public class LightningDialogViewAdapter extends ArrayAdapter {
     private String[] data;
 
     public LightningDialogViewAdapter(Context context, int layoutResourceId,
-                           String[] data) {
-        super(context, layoutResourceId, data);
-        this.layoutResourceId = layoutResourceId;
-        this.context = context;
-        this.data = data;
+        String[] data) {
+            super(context, layoutResourceId, data);
+            this.layoutResourceId = layoutResourceId;
+            this.context = context;
+            this.data = data;
     }
 
     @Override
@@ -57,7 +59,6 @@ public class LightningDialogViewAdapter extends ArrayAdapter {
                 int imageId = context.getResources().getIdentifier(resource, "drawable", MainActivity.PACKAGE_NAME);
 
                 ImageView letter = new ImageView(context);
-                letter.setForegroundGravity(Gravity.CENTER_HORIZONTAL);
 
                 Picasso.with(context)
                         .load(imageId)

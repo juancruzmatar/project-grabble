@@ -1,7 +1,6 @@
 package com.s1451552.grabble;
 
 import android.Manifest;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -29,11 +28,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -89,31 +86,40 @@ import javax.xml.parsers.SAXParserFactory;
 import static com.s1451552.grabble.SplashActivity.sWordlist;
 
 /*
+ * This is the core activity. It serves the following purposes:
+ *  {*} Displaying main content with loaded map
+ *  {*} Downloading and parsing letter placemark map
+ *  {*} Displaying letters depending on their distance to the user's location point
+ *  {*} Implementing letter pickup and storing the statistics to SharedPreferences
+ *  {*} Lightning Mode functionality
+ *
  * Written by Vytautas Mizgiris, S1451552
  * Nov 2016 - Jan 2017
  *
- * Borrowed open-source and tutorial code from:
+ * Some open-source and tutorial code borrowed from:
  * Mapbox: https://www.mapbox.com/android-sdk/
  * Fused location provider: http://www.androidwarriors.com/2015/10/fused-location-provider-in-android.html
  * GridView tutorial code: http://stacktips.com/tutorials/android/android-gridview-example-building-image-gallery-in-android
  * Checking if GPS/Internet is enabled: http://stackoverflow.com/questions/10311834/how-to-check-if-location-services-are-enabled
+ * ... and others
  */
 
 public class MainActivity extends RuntimePermissions implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
+    public final String TAG = "MainActivity";
 
     private static final int REQUEST_PERMISSIONS = 20;
     public static String PACKAGE_NAME;
 
-    /* Main preferences */
+    /* Main shared preferences */
     SharedPreferences grabblePref;
     SharedPreferences letterlistPref;
     SharedPreferences wordlistPref;
     SharedPreferences settingsPref;
 
+    /* Constants for accessing shared preference data */
     public static final int DOESNT_EXIST = -1;
     public static final String preferences = "grabble_preferences";
-    public static final String PREF_VERSION_CODE_KEY = "version_code";
     public static final String TRAVEL_DISTANCE = "travel_distance";
     public static final String LETTER_COUNT = "letter_count";
     public static final String WORD_COUNT = "word_count";
@@ -125,28 +131,35 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     public static final String letter_list = "grabble_letterlist";
     public static final String word_list = "grabble_wordlist";
 
+    /* Layout items */
+    ActionBar mActionBar;
+    AlertDialog mLightningDialog;
     private MapView mapView;
     private NavigationView mNavigationView;
     private ProgressDialog mProgressDialog;
     private FloatingActionButton mLightningButton;
-    private AlertDialog mLightningDialog;
     private TextView mCountdown;
-    private ActionBar mActionBar;
 
+
+    /* Variables dealing with auto / manual night mode */
+    private final DaytimeChangeReceiver mDaytimeReceiver = new DaytimeChangeReceiver();
     private int dayHour;
     public static boolean isLightningMode;
     public static boolean lightningModeCompleted;
     private static boolean isNightChecked;
     private static boolean isNightAuto;
 
+    /* Mapbox */
     private MapboxMap map;
     private CameraPosition position;
 
+    /* Location */
     Location mLastLocation;
     Location mOldLocation;
+    LocationRequest mLocationRequest;
     private GoogleApiClient mGoogleApiClient;
-    private LocationRequest mLocationRequest;
 
+    /* Parsed and stored letter and word data */
     private String[] mLightningWords;
     private ArrayList<MarkerViewOptions> mParsedMarkersRaw;
     private ArrayList<Marker> mParsedMarkers;
@@ -156,46 +169,49 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Initialize Mapbox
-        MapboxAccountManager.start(this, getString(R.string.access_token));
+        // Initialize Mapbox.
+        MapboxAccountManager.start(this, getString(R.string.mapbox_access_token));
 
-        // Getting stored preferences
+        // Getting stored preferences.
         grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
         letterlistPref = getApplicationContext().getSharedPreferences(letter_list, Context.MODE_PRIVATE);
         wordlistPref = getApplicationContext().getSharedPreferences(word_list, Context.MODE_PRIVATE);
         settingsPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         PACKAGE_NAME = getApplicationContext().getPackageName();
 
+        // Get the current hour of the day to set the map colours initially.
         dayHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-
-        // Init Nav Box night icon 'isChecked' value
-        isNightChecked = false;
 
         setContentView(R.layout.activity_main);
 
+        // Hide the Action Bar for design purposes
         mActionBar = getSupportActionBar();
         if (mActionBar != null) {
             mActionBar.hide();
         }
 
-        // Creating the Mapbox map view
+        // Create the Mapbox map view
         mapView = (MapView) findViewById(R.id.mapview);
         mapView.onCreate(savedInstanceState);
 
-        // Setting up side navigation menu
+        // Set up side navigation menu
         mNavigationView = (NavigationView) findViewById(R.id.navigation);
+        // Is navigation menu item "Night mode" toggled on?
+        // If in manual night mode switching, initial value will be false.
+        isNightChecked = false;
         setupNavigationMenu();
 
+        // Field for showing countdown for Lightning Mode.
         mCountdown = (TextView) findViewById(R.id.countdown);
         mLightningButton = (FloatingActionButton) findViewById(R.id.start_lightning);
         mLightningButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startLightningMode();
+                prepareLightningMode();
             }
         });
 
-        // Message that will display if letter data is being downloaded
+        // Message that will display if letter data is being downloaded.
         mProgressDialog = new ProgressDialog(MainActivity.this);
         mProgressDialog.setMessage("Downloading map data...");
         mProgressDialog.setIndeterminate(true);
@@ -208,6 +224,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
 
         // Request permissions for location access
         // (directing to the class RuntimePermissions)
+        // Redirects to onPermissionsGranted(id).
         requestAppPermissions(new String[]{
                 Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION},
@@ -218,16 +235,15 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         if (mNavigationView != null)
             mNavigationView.getMenu().findItem(R.id.nav_nightmode).setVisible(!isNightAuto);
 
-        // Setting up selected item listener for the nav menu
+        // Setting up selected item listener for the navigation menu.
         mNavigationView.setNavigationItemSelectedListener(
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(MenuItem menuItem) {
 
-                        // Checking which item was selected - taking corresponding action
+                        // Checking which item was selected - taking corresponding action.
                         switch (menuItem.getItemId()) {
                             case R.id.nav_backpack: {
-                                //menuItem.setChecked(true);
                                 Log.d(this.toString(), "Pressed backpack");
 
                                 Intent i = new Intent(MainActivity.this, BackpackActivity.class);
@@ -252,12 +268,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                                 if(!isNightChecked) {
                                     menuItem.setChecked(true);
                                     if (map != null)
-                                        map.setStyleUrl(getString(R.string.mapref_night));
+                                        map.setStyleUrl(getString(R.string.mapbox_mapref_night));
                                     isNightChecked = true;
                                 } else {
                                     menuItem.setChecked(false);
                                     if (map != null)
-                                        map.setStyleUrl(getString(R.string.mapref));
+                                        map.setStyleUrl(getString(R.string.mapbox_mapref));
                                     isNightChecked = false;
                                 }
 
@@ -290,10 +306,10 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         super.onResume();
         mapView.onResume();
 
-        // Register daytime change receiver
+        // Register daytime change receiver.
         registerReceiver(mDaytimeReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
 
-        // Set map colours if night mode is set to auto
+        // Set map colours if night mode is set to auto.
         setMapColours();
     }
 
@@ -302,12 +318,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         super.onPause();
         mapView.onPause();
 
-        // Unregister daytime change receiver
+        // Unregister daytime change receiver.
         try {
             unregisterReceiver(mDaytimeReceiver);
         } catch (IllegalArgumentException e) {
             if (e.getMessage().contains("Receiver not registered")) {
-                Log.w(this.toString(),"Tried to unregister the receiver when it's not registered");
+                Log.w(TAG, "Tried to unregister the receiver when it's not registered");
             } else { throw e; }
         }
 
@@ -330,6 +346,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     protected void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
+
+        // Save the already *used* letter map.
         this.writeLetterMap();
 
         if (mGoogleApiClient != null) {
@@ -340,6 +358,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     @Override
     public void onPermissionsGranted(final int requestCode) {
         buildGoogleApiClient();
+
+        // Start by initializing the Mapbox map.
         initMap();
     }
 
@@ -422,6 +442,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             if (map != null) {
                 position = new CameraPosition.Builder()
                         .target(new LatLng(location))
+                        .zoom(20)
                         .build();
                 map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
                 displayClosestLetters(location);
@@ -462,6 +483,47 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
+    }
+
+    private void initMap() {
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                Log.d("initMap", "Map ready, initializing map settings...");
+                // Initialize MapboxMap object.
+                map = mapboxMap;
+
+                // Game styling requires map to be zoomed in.
+                map.setMinZoom(18);
+                map.setMaxZoom(20);
+
+                // Enable user tracking to show the padding effect.
+                map.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
+                map.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.GPS);
+                map.getTrackingSettings().setDismissAllTrackingOnGesture(false);
+
+                // Customize the user location icon using the getMyLocationViewSettings object.
+                map.getMyLocationViewSettings().setPadding(0, 500, 0, 0);
+                map.getMyLocationViewSettings().setForegroundTintColor(Color.parseColor("#efca5b"));
+                map.getMyLocationViewSettings().setAccuracyTintColor(0);
+                map.getMyLocationViewSettings().setAccuracyAlpha(1);
+
+                // Set map colours if night mode is set to auto.
+                setMapColours();
+
+                // What does the application do when a marker is selected?
+                map.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener() {
+                    @Override
+                    public boolean onMarkerClick(@NonNull Marker marker) {
+                        collectLetter(marker);
+                        return false;
+                    }
+                });
+
+                // Once map is initialized, do letter scatter map initialization.
+                initLetterMapLoad();
+            }
+        });
     }
 
     private String storeCurrentWeekday() {
@@ -560,14 +622,18 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         void processFinish(String output);
     }
 
+    /**
+     * This download task {@link AsyncTask} is responsible for
+     * downloading map data from the University server and parsing
+     * KML data before passing it to the JSON writer {@code writeLetterMap()}.
+     */
     private class DownloadTask extends AsyncTask<String, Integer, String> {
-
-        public AsyncResponse delegate = null;
-
-        private PowerManager.WakeLock mWakeLock;
         private final String TAG = "DownloadTask";
 
-        public DownloadTask(AsyncResponse delegate) {
+        private AsyncResponse delegate = null;
+        private PowerManager.WakeLock mWakeLock;
+
+        private DownloadTask(AsyncResponse delegate) {
             this.delegate = delegate;
         }
 
@@ -580,22 +646,18 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 URL url = new URL(sUrl[0]);
                 Log.d(TAG, "Getting data from URL: [" + url + "]");
 
-                Log.d(TAG, "Connecting to the data source...");
                 conn = (HttpURLConnection) url.openConnection();
+                Log.d(TAG, "Connecting to the data source...");
                 conn.connect();
 
                 // Expect HTTP 200 OK, so we don't mistakenly save error report
-                // instead of the file
+                // instead of the file.
                 if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                     return "Server returned HTTP " + conn.getResponseCode()
                             + " " + conn.getResponseMessage();
                 } else {
                     Log.d(TAG, "Connected!");
                 }
-
-                // This will be useful to display download percentage.
-                // Might be -1: server did not report the length.
-                int fileLength = conn.getContentLength();
 
                 // Download the file
                 input = conn.getInputStream();
@@ -625,9 +687,9 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 int psize = placemarks.size();
                 int i = 0;
                 for (Placemark p : placemarks) {
-                    // Allow cancelling with back button
+                    // Allow cancelling with back button.
                     if (isCancelled()) {
-                        output.close();
+                        input.close();
                         return null;
                     }
 
@@ -638,11 +700,13 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                     mapFile.add(p.getDescription(), coordinates);
 
                     i = i + 1;
+                    // Publishing the progress....
                     publishProgress((int) (i * 50 / psize));
                 }
 
+                // Convert the map JSON object to a byte array.
                 InputStream jsonMap = new ByteArrayInputStream(mapFile.toString().getBytes(StandardCharsets.UTF_8));
-                // Specify the directory for letter map file storage
+                // Specify the directory for letter map file storage.
                 output = new FileOutputStream(getExternalFilesDir(null) + "/map.grabble");
 
                 byte data[] = new byte[4096];
@@ -650,15 +714,15 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 long total = 0;
                 int jsonLength = mapFile.toString().length();
                 while (count != -1) {
-                    // Allow cancelling with back button
+                    // Allow cancelling with back button.
                     if (isCancelled()) {
-                        input.close();
+                        output.close();
                         return null;
                     }
                     total += count;
+
                     // Publishing the progress....
-                    if (jsonLength > 0) // Only if total length is known
-                        publishProgress((int) (total * 50 / jsonLength) + 50);
+                    publishProgress((int) (total * 50 / jsonLength) + 50);
                     output.write(data, 0, count);
                     count = jsonMap.read(data);
                 }
@@ -686,7 +750,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         protected void onPreExecute() {
             super.onPreExecute();
             // Take CPU lock to prevent CPU from going off if the user
-            // presses the power button during download
+            // presses the power button during download.
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
             mWakeLock.acquire();
@@ -696,7 +760,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         @Override
         protected void onProgressUpdate(Integer... progress) {
             super.onProgressUpdate(progress);
-            // If we get here, length is known, now set indeterminate to false
+            // If we get here, length is known, now set indeterminate to false.
             mProgressDialog.setIndeterminate(false);
             mProgressDialog.setMax(100);
             mProgressDialog.setProgress(progress[0]);
@@ -711,6 +775,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             else {
                 Toast.makeText(MainActivity.this, "Navigation data downloaded.", Toast.LENGTH_SHORT).show();
             }
+            // Send the listener the finishing event,
+            // download task has finished.
             delegate.processFinish(result);
         }
     }
@@ -718,6 +784,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private void parseLetterMap() {
         File mapfile = new File(getApplicationContext().getExternalFilesDir(null), "map.grabble");
 
+        // Read the JSON letter map that was stored in the filesystem.
         try {
             FileReader reader = new FileReader(mapfile);
             JsonValue letters = Json.parse(reader);
@@ -733,6 +800,14 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                         .position(finalCoordinates)
                         .title(String.valueOf(letter));
 
+                /* Add markers to two arrays for the purpose of watching
+                 * if there are markers around and finding the correct ones
+                 * to remove from the map.
+                 *
+                 * Mapbox only has methods:
+                 * mapview.add(MarkerViewOptions() type object)
+                 * mapview.remove(Marker() type object)
+                */
                 mParsedMarkersRaw.add(mvo);
                 mParsedMarkers.add(mvo.getMarker());
             }
@@ -767,47 +842,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         }
     }
 
-    private void initMap() {
-        mapView.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(MapboxMap mapboxMap) {
-                Log.d("initMap", "Map ready, initializing map settings...");
-                // Initialize MapboxMap object
-                map = mapboxMap;
-
-                // Game styling requires map to be zoomed in
-                map.setMinZoom(18);
-                map.setMaxZoom(20);
-
-                // Enable user tracking to show the padding effect.
-                map.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
-                map.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.GPS);
-                map.getTrackingSettings().setDismissAllTrackingOnGesture(false);
-
-                // Customize the user location icon using the getMyLocationViewSettings object.
-                map.getMyLocationViewSettings().setPadding(0, 500, 0, 0);
-                map.getMyLocationViewSettings().setForegroundTintColor(Color.parseColor("#efca5b"));
-                map.getMyLocationViewSettings().setAccuracyTintColor(0);
-                map.getMyLocationViewSettings().setAccuracyAlpha(1);
-
-                // Set map colours if night mode is set to auto
-                setMapColours();
-
-                // What does the application do when a marker is selected?
-                map.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener() {
-                    @Override
-                    public boolean onMarkerClick(@NonNull Marker marker) {
-                        collectLetter(marker);
-                        return false;
-                    }
-                });
-
-                // Once map is initialized, do letter scatter map initialization
-                initLetterMapLoad();
-            }
-        });
-    }
-
     private void collectLetter(Marker marker) {
         String letter = marker.getTitle();
         Toast.makeText(
@@ -816,24 +850,24 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 Toast.LENGTH_SHORT)
                 .show();
 
+        // Remove the letter from the map first, then logic.
         map.removeMarker(marker);
 
+        // Checks if the parsed marker array has the marker.
+        // Else ignore.
         if (mParsedMarkersRaw != null &&
                 mParsedMarkers != null &&
                 mParsedMarkers.contains(marker)) {
             /**
              * 1. Check if marker exists in MARKER array;
-             *  2. Get index of the marker in MARKER array;
-             *  3. Remove marker from MARKER array;
-             *  4. Remove marker from MVO array (Raw) by index.
+             * 2. Get index of the marker in MARKER array;
+             * 3. Remove marker from MARKER array;
+             * 4. Remove marker from MVO array (Raw) by index.
+             * 5. Set the current letter count in SharedPreferences
              */
             int markerAtIndex = mParsedMarkers.indexOf(marker);
             mParsedMarkers.remove(marker);
             mParsedMarkersRaw.remove(markerAtIndex);
-
-            // Do we need to store date for the letters acquired?
-            // Long tsLong = System.currentTimeMillis()/1000;
-            // String ts = tsLong.toString();
 
             SharedPreferences.Editor editor = letterlistPref.edit();
 
@@ -846,8 +880,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 editor.putInt(marker.getTitle(), 1).apply();
             }
 
-            Log.d("collectLetter", String.valueOf(currentCount));
-
             int count;
             if (letterlistPref.getAll() != null) {
                 count = letterlistPref.getAll().size();
@@ -855,6 +887,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 count = 1;
             }
             grabblePref.edit().putInt(LETTER_COUNT, count).apply();
+            Log.d("collectLetter", "Current captured letter count: " + String.valueOf(count));
 
         } else {
             Log.e("collectLetter", "No such marker in parsed markers array!");
@@ -864,16 +897,18 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
     private void displayClosestLetters(Location location) {
         final String TAG = "displayClosestLetters";
 
+        // Called every time location changes.
         if (location != null && map != null && mParsedMarkersRaw != null) {
             LatLng currentPos = new LatLng(location);
 
-            // For iteration of mParsedMarkers array
+            // For iteration of mParsedMarkers array.
             int markerAtIndex = 0;
             for (MarkerViewOptions m : mParsedMarkersRaw) {
+                // Have both type objects in place to add and remove from the map.
                 Marker marker = mParsedMarkers.get(markerAtIndex);
                 markerAtIndex++;
 
-                // Distance for being able to grab a letter: 10 meters
+                // Distance for being able to grab a letter: 10 meters.
                 if (currentPos.distanceTo(m.getPosition()) <= 10) {
                     if (mParsedMarkersRaw != null &&
                             !mLettersAround.contains(marker)) {
@@ -897,13 +932,20 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         }
     }
 
-    private void startLightningMode() {
-        if (mLightningWords == null)
+    private void prepareLightningMode() {
+        // Check if the previously generated words were found and removed
+        // or the game is run for the first time
+        if (mLightningWords == null) {
             setRandomWords();
+        }
 
+        // Set up the required wordset as a Set<String> to pass onto SharedPreferences
         Set<String> wordset = new HashSet<>(Arrays.asList(mLightningWords));
         grabblePref.edit().putStringSet(LIGHT_REQUIRED, wordset).apply();
 
+        // Set up the dialog for showing words and starting Lightning Mode.
+        // An adapter is used to display words as lists of letters, just like
+        // in the WordBagFragment.
         View dialogView = getLayoutInflater().inflate(R.layout.fragment_dialoglist, null);
         ListView dialogList = (ListView) dialogView.findViewById(R.id.dialog_word_list);
         dialogList.setAdapter(
@@ -929,79 +971,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         dialogBuilder.setPositiveButton(R.string.lightning_yes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                isLightningMode = true;
-
-                TextView lightWord1 = (TextView) findViewById(R.id.light_word1);
-                TextView lightWord2 = (TextView) findViewById(R.id.light_word2);
-                TextView lightWord3 = (TextView) findViewById(R.id.light_word3);
-
-                lightWord1.setText(mLightningWords[0].toUpperCase());
-                lightWord2.setText(mLightningWords[1].toUpperCase());
-                lightWord3.setText(mLightningWords[2].toUpperCase());
-
-                findViewById(R.id.light_words).setVisibility(View.VISIBLE);
-
-                CountDownTimer ct =  new CountDownTimer(900000, 1) {
-
-                    public void onTick(long mil) {
-                        String min = String.format(Locale.UK, "%02d", (int) mil/60000);
-                        String sec = String.format(Locale.UK, "%02d", (int) (mil%60000)/1000);
-                        String ms = String.format(Locale.UK, "%02d", (int) (mil % 1000)/10);
-
-                        mCountdown.setText(min + ":" + sec + ":" + ms);
-                        mCountdown.setVisibility(View.VISIBLE);
-
-                        mLightningButton.setClickable(false);
-                        mLightningButton.setBackgroundTintList(
-                                ColorStateList.valueOf(getColor(R.color.grey_trans)));
-
-                        if (!isLightningMode) {
-                            this.onFinish();
-                        }
-                    }
-
-                    public void onFinish() {
-                        mCountdown.setVisibility(View.INVISIBLE);
-
-                        mLightningButton.setClickable(true);
-                        mLightningButton.setBackgroundTintList(
-                                ColorStateList.valueOf(getColor(R.color.accent)));
-
-                        if (lightningModeCompleted) {
-                            int prevScore = grabblePref.getInt(HIGHSCORE, 0);
-                            int newScore = prevScore + 200;
-
-                            Log.d("btnGrabbleOnClick", "Lightning mode complete!!! Extra points: 200");
-                            Log.d("btnGrabbleOnClick", "Current highscore!!! " + newScore);
-                            grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
-
-                            Toast.makeText(
-                                    MainActivity.this,
-                                    (R.string.lightning_toast_completed),
-                                    Toast.LENGTH_LONG)
-                                    .show();
-                        } else {
-                            Toast.makeText(
-                                    MainActivity.this,
-                                    (R.string.lightning_toast_not_completed),
-                                    Toast.LENGTH_LONG)
-                                    .show();
-                        }
-
-                        findViewById(R.id.light_words).setVisibility(View.INVISIBLE);
-
-                        grabblePref.edit()
-                                .remove(LIGHT_GOT)
-                                .remove(LIGHT_REQUIRED)
-                                .apply();
-
-                        // Make a new set of random words
-                        setRandomWords();
-
-                        this.cancel();
-                    }
-                };
-                ct.start();
+                startLightningMode();
                 dialog.dismiss();
             }
         });
@@ -1025,22 +995,89 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         mLightningWords = words;
     }
 
-    private boolean hasCompletedLightning() {
-        Set<String> requiredWords = grabblePref.getStringSet(LIGHT_REQUIRED, null);
-        Set<String> gotWords = grabblePref.getStringSet(LIGHT_GOT, null);
+    private void startLightningMode() {
+        isLightningMode = true;
 
-        if (requiredWords != null && gotWords != null) {
-            for (String w : requiredWords) {
-                if (!gotWords.contains(w)) {
-                    return false;
+        // Show words that will need to be found
+        TextView lightWord1 = (TextView) findViewById(R.id.light_word1);
+        TextView lightWord2 = (TextView) findViewById(R.id.light_word2);
+        TextView lightWord3 = (TextView) findViewById(R.id.light_word3);
+
+        lightWord1.setText(mLightningWords[0].toUpperCase());
+        lightWord2.setText(mLightningWords[1].toUpperCase());
+        lightWord3.setText(mLightningWords[2].toUpperCase());
+
+        findViewById(R.id.light_words).setVisibility(View.VISIBLE);
+
+        // Set up the timer and design
+        CountDownTimer ct =  new CountDownTimer(900000, 1) {
+
+            public void onTick(long mil) {
+                String min = String.format(Locale.UK, "%02d", (int) mil/60000);
+                String sec = String.format(Locale.UK, "%02d", (int) (mil%60000)/1000);
+                String ms = String.format(Locale.UK, "%02d", (int) (mil % 1000)/10);
+
+                mCountdown.setText(min + ":" + sec + ":" + ms);
+                mCountdown.setVisibility(View.VISIBLE);
+
+                mLightningButton.setClickable(false);
+                mLightningButton.setBackgroundTintList(
+                        ColorStateList.valueOf(getColor(R.color.grey_trans)));
+
+                if (!isLightningMode) {
+                    this.onFinish();
                 }
             }
-            return true;
-        }
-        return false;
+
+            public void onFinish() {
+                mCountdown.setVisibility(View.INVISIBLE);
+
+                mLightningButton.setClickable(true);
+                mLightningButton.setBackgroundTintList(
+                        ColorStateList.valueOf(getColor(R.color.accent)));
+
+                if (lightningModeCompleted) {
+                    // Give the user extra 200 points for successfully completing
+                    // Lightning Mode.
+                    int prevScore = grabblePref.getInt(HIGHSCORE, 0);
+                    int newScore = prevScore + 200;
+
+                    Log.d("btnGrabbleOnClick", "Lightning mode complete!!! Extra points: 200");
+                    Log.d("btnGrabbleOnClick", "Current highscore!!! " + newScore);
+                    grabblePref.edit().putInt(HIGHSCORE, newScore).apply();
+
+                    Toast.makeText(
+                            MainActivity.this,
+                            (R.string.lightning_toast_completed),
+                            Toast.LENGTH_LONG)
+                            .show();
+                } else {
+                    // If the Mode wasn't completed, inform the user.
+                    // Do not give any extras.
+                    Toast.makeText(
+                            MainActivity.this,
+                            (R.string.lightning_toast_not_completed),
+                            Toast.LENGTH_LONG)
+                            .show();
+                }
+
+                findViewById(R.id.light_words).setVisibility(View.INVISIBLE);
+
+                // Reset the fields for required and had Lightning words
+                grabblePref.edit()
+                        .remove(LIGHT_GOT)
+                        .remove(LIGHT_REQUIRED)
+                        .apply();
+
+                // Make a new set of random words
+                setRandomWords();
+
+                this.cancel();
+            }
+        };
+        ct.start();
     }
 
-    private final DaytimeChangeReceiver mDaytimeReceiver = new DaytimeChangeReceiver();
     private class DaytimeChangeReceiver extends BroadcastReceiver {
 
         @Override
@@ -1067,12 +1104,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         if (isNightAuto && map != null) {
             int currHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             if (currHour >= 8 && currHour < 18) {
-                map.setStyleUrl(getString(R.string.mapref));
+                map.setStyleUrl(getString(R.string.mapbox_mapref));
             } else {
-                map.setStyleUrl(getString(R.string.mapref_night));
+                map.setStyleUrl(getString(R.string.mapbox_mapref_night));
             }
         } else if (!isNightAuto && map != null) {
-            map.setStyleUrl(getString(R.string.mapref));
+            map.setStyleUrl(getString(R.string.mapbox_mapref));
         }
     }
 }

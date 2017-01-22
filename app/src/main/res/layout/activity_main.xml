@@ -57,7 +57,7 @@
         android:orientation="horizontal"
         android:id="@+id/light_words"
         android:visibility="invisible"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:background="@drawable/shape_rectangle_timer">
@@ -105,7 +105,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="36dp"
+        android:layout_marginTop="42dp"
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
         android:visibility="invisible"

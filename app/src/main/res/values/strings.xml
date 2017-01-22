@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Grabble</string>
 
-    <string name="access_token">pk.eyJ1Ijoic3ZhcmExbmlzIiwiYSI6ImNpdW12bmh5MjAwMGMydW8xN2liamxwaHkifQ.-BOn-xkFcCwieq8uctv6NA</string>
-    <string name="mapref">mapbox://styles/svara1nis/ciumvobkz00ce2inopcds2ije</string>
-    <string name="mapref_night">mapbox://styles/svara1nis/civ5qulqv003e2il69shqx1vs</string>
+    <string name="mapbox_access_token">pk.eyJ1Ijoic3ZhcmExbmlzIiwiYSI6ImNpdW12bmh5MjAwMGMydW8xN2liamxwaHkifQ.-BOn-xkFcCwieq8uctv6NA</string>
+    <string name="mapbox_mapref">mapbox://styles/svara1nis/ciumvobkz00ce2inopcds2ije</string>
+    <string name="mapbox_mapref_night">mapbox://styles/svara1nis/civ5qulqv003e2il69shqx1vs</string>
 
     <string name="msg_permissions">Please enable required permissions to use the app!</string>
     <string name="msg_gps_disabled_title">Location not enabled</string>

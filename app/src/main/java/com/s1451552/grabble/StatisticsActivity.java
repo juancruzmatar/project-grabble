@@ -18,23 +18,22 @@ import static com.s1451552.grabble.MainActivity.WORD_COUNT;
 import static com.s1451552.grabble.MainActivity.HIGHSCORE;
 import static com.s1451552.grabble.MainActivity.preferences;
 
+/**
+ * Displays in-game statistics by fetching data
+ * from SharedPreferences. Code is pretty much
+ * self-explanatory.
+ */
+
 public class StatisticsActivity extends AppCompatActivity {
+    public static final String TAG = "StatisticsActivity";
 
     SharedPreferences grabblePref;
-    SharedPreferences highscorePref;
-
-    private ActionBar mActionBar;
-    private NumberFormat mDecFormatter;
-
-    private float mTravelDistance;
-    private int mLetterCount;
-    private int mWordCount;
+    NumberFormat mDecFormatter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Getting stored preferences
         grabblePref = getApplicationContext().getSharedPreferences(preferences, Context.MODE_PRIVATE);
 
         setContentView(R.layout.activity_statistics);
@@ -50,15 +49,17 @@ public class StatisticsActivity extends AppCompatActivity {
 
         if (grabblePref.contains(TRAVEL_DISTANCE)) {
             float distance = grabblePref.getInt(TRAVEL_DISTANCE, -1);
-            if (distance != 0.0)
+            if (distance != 0.0) {
                 if (distance < 1000) {
-                    txtDistance.setText(String.valueOf(distance) + " meters");
+                    String sDistance = String.valueOf(distance) + " meters";
+                    txtDistance.setText(sDistance);
                 } else {
-                    Log.d("StatisticsActivity", "Distance: " + distance);
                     distance = distance / 1000;
-                    String sDistance = mDecFormatter.format(distance);
-                    txtDistance.setText(sDistance + " kilometers");
+                    String sDistance = mDecFormatter.format(distance) + " kilometers";
+                    txtDistance.setText(sDistance);
                 }
+                Log.d(TAG, "Distance: " + distance);
+            }
         }
         if (grabblePref.contains(LETTER_COUNT)) {
             txtLetters.setText(String.valueOf(grabblePref.getInt(LETTER_COUNT, -1)));
@@ -70,10 +71,17 @@ public class StatisticsActivity extends AppCompatActivity {
             txtHighscore.setText(String.valueOf(grabblePref.getInt(HIGHSCORE, -1)));
         }
 
-        mActionBar = getSupportActionBar();
-        if (mActionBar != null) {
+        setupActionBar();
+    }
+
+    /**
+     * Set up the {@link android.app.ActionBar}, if the API is available.
+     */
+    private void setupActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
             // Show the Up button in the action bar.
-            mActionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
 

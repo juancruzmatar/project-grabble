@@ -11,17 +11,15 @@ import android.widget.ListView;
 import java.util.ArrayList;
 
 /**
- * Word Bag fragment for BackpackActivity
- * Will store created words and their point values
- * Created by Vytautas on 08/11/2016.
+ * Word Bag fragment for BackpackActivity.
+ * Displays formed words and their point values.
  */
 
 public class WordBagFragment extends Fragment {
 
     public ListView mListView;
-    private WordViewAdapter mWordListAdapter;
-
-    private ArrayList<String> mWords;
+    WordViewAdapter mWordListAdapter;
+    ArrayList<String> mWords;
 
     public WordBagFragment() {
     }

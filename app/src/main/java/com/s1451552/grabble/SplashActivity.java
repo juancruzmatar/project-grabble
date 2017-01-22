@@ -12,8 +12,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 /**
- * Splash Activity
- * Displays a splash screen before entering the game
+ * Splash Activity. Displays a splash screen before entering the game
+ * and works on parsing the wordlist to an array.
  */
 
 public class SplashActivity extends AppCompatActivity {
@@ -43,7 +43,7 @@ public class SplashActivity extends AppCompatActivity {
                         }
                         input.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.e("SplashActivity", e.toString());
                     }
 
                     sleep(2000);

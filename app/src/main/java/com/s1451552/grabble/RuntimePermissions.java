@@ -14,6 +14,8 @@ import android.util.SparseIntArray;
 import android.view.View;
 
 /**
+ * Class for managing runtime permissions when
+ * first launching the application.
  * Created by MG on 03-04-2016.
  *
  * Source code obtained from the tutorial at:

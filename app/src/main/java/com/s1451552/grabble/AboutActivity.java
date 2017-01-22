@@ -6,23 +6,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
 /**
- * Created by Vytautas on 18/01/2017.
+ * Simple activity, that gets launched from the Settings menu
+ * and displays information about the app.
  */
 
 public class AboutActivity extends AppCompatActivity {
-
-    private ActionBar mActionBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Information is hardcoded in the layout.
         setContentView(R.layout.pref_about);
 
-        mActionBar = getSupportActionBar();
-        if (mActionBar != null) {
+        setupActionBar();
+    }
+
+    /**
+     * Set up the {@link android.app.ActionBar}, if the API is available.
+     */
+    private void setupActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
             // Show the Up button in the action bar.
-            mActionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
 

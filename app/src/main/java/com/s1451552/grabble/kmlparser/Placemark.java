@@ -3,9 +3,10 @@ package com.s1451552.grabble.kmlparser;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
 /**
- * Class representing placemark used in Google Maps
- * Edited version for Grabble
+ * Class representing Placemark used in Google Maps.
+ * Edited version for Grabble, using only Title, Description and Coordinates.
  */
+
 public class Placemark {
 
 	private String title;

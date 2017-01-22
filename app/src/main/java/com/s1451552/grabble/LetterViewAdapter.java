@@ -2,9 +2,6 @@ package com.s1451552.grabble;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,13 +14,14 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 
 /**
- * Created by Vytautas on 08/11/2016.
+ * ArrayAdapter to display letter list on grid
+ * in the {@link LetterBagFragment}.
  */
 
 public class LetterViewAdapter extends ArrayAdapter {
     private Context context;
     private int layoutResourceId;
-    private ArrayList<String> data = new ArrayList();
+    private ArrayList<String> data;
 
     public LetterViewAdapter(Context context, int layoutResourceId,
                              ArrayList<String> data) {
@@ -35,18 +33,18 @@ public class LetterViewAdapter extends ArrayAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        View row = convertView;
+        View rowView = convertView;
         ViewHolder holder = null;
 
-        if (row == null) {
+        if (rowView == null) {
             LayoutInflater inflater = ((Activity) context).getLayoutInflater();
-            row = inflater.inflate(layoutResourceId, parent, false);
+            rowView = inflater.inflate(layoutResourceId, parent, false);
             holder = new ViewHolder();
-            holder.imageTitle = (TextView) row.findViewById(R.id.letter_text);
-            holder.image = (ImageView) row.findViewById(R.id.letter_image);
-            row.setTag(holder);
+            holder.imageTitle = (TextView) rowView.findViewById(R.id.letter_text);
+            holder.image = (ImageView) rowView.findViewById(R.id.letter_image);
+            rowView.setTag(holder);
         } else {
-            holder = (ViewHolder) row.getTag();
+            holder = (ViewHolder) rowView.getTag();
         }
 
         String letter = data.get(position).split("-")[0].toLowerCase();
@@ -64,10 +62,10 @@ public class LetterViewAdapter extends ArrayAdapter {
         holder.imageTitle.setText(amount);
         holder.imageTitle.setTextSize(16);
 
-        return row;
+        return rowView;
     }
 
-    static class ViewHolder {
+    private static class ViewHolder {
         TextView imageTitle;
         ImageView image;
     }

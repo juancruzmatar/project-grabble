@@ -1,8 +1,6 @@
 package com.s1451552.grabble;
 
 import android.annotation.TargetApi;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.Preference;
@@ -11,11 +9,11 @@ import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings
  */
+
 public class SettingsActivity extends AppCompatPreferenceActivity {
     /**
      * A preference value change listener that updates the preference's summary
@@ -96,8 +94,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_general);
             setHasOptionsMenu(true);
 
-            Preference nickname = findPreference("nickname");
             // Bind nickname change to the summary of the preference
+            Preference nickname = findPreference("nickname");
             bindPreferenceSummaryToValue(nickname);
         }
     }

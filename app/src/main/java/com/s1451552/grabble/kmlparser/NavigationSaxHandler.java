@@ -1,18 +1,3 @@
-/*
- * Copyright (c)2012 Poohdish Rattanavijai
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.s1451552.grabble.kmlparser;
 
 import org.xml.sax.Attributes;
@@ -21,25 +6,28 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.util.ArrayList;
 
-@SuppressWarnings("unused")
+/**
+ * Handler for parsing KML data for Grabble using a SAXParser.
+ */
+
 public class NavigationSaxHandler extends DefaultHandler{
 
 	private boolean in_kmltag = false; 
 	private boolean in_placemarktag = false; 
 	private boolean in_nametag = false;
 	private boolean in_descriptiontag = false;
-	private boolean in_geometrycollectiontag = false;
-	private boolean in_linestringtag = false;
-	private boolean in_pointtag = false;
 	private boolean in_coordinatestag = false;
-
-	private StringBuffer buffer;
 
     private Placemark placemark;
 	private ArrayList<Placemark> placemarks;
+
+	/**
+	 * Storing malformed Placemarks when parsing the KML file.
+     * Indicated by malformed coordinates.
+	 */
     private ArrayList<Placemark> malformed;
 
-	/*
+	/**
 	 * Get parsed placemarks as
 	 * an ArrayList<Placemark> object
 	 */
@@ -48,7 +36,7 @@ public class NavigationSaxHandler extends DefaultHandler{
 		return this.placemarks;
 	} 
 
-	/*
+	/**
 	 * Parser methods
 	 */
 	@Override 
@@ -61,9 +49,7 @@ public class NavigationSaxHandler extends DefaultHandler{
 	public void endDocument() throws SAXException { }
 
     /** Gets be called on opening tags like:
-	 * <tag> 
-	 * Can provide attribute(s), when xml was like: 
-	 * <tag attribute="attributeValue">
+	 * <tag>
      */
 	@Override 
 	public void startElement(String namespaceURI, String localName, 
@@ -77,14 +63,7 @@ public class NavigationSaxHandler extends DefaultHandler{
 			this.in_nametag = true;
 		} else if (localName.equals("description")) { 
 			this.in_descriptiontag = true;
-		} else if (localName.equals("GeometryCollection")) { 
-			this.in_geometrycollectiontag = true;
-		} else if (localName.equals("LineString")) { 
-			this.in_linestringtag = true;              
-		} else if (localName.equals("point")) { 
-			this.in_pointtag = true;          
 		} else if (localName.equals("coordinates")) {
-			buffer = new StringBuffer();
 			this.in_coordinatestag = true;                        
 		}
 	} 
@@ -104,12 +83,6 @@ public class NavigationSaxHandler extends DefaultHandler{
 			this.in_nametag = false;           
 		} else if (localName.equals("description")) { 
 			this.in_descriptiontag = false;
-		} else if (localName.equals("GeometryCollection")) { 
-			this.in_geometrycollectiontag = false;
-		} else if (localName.equals("LineString")) { 
-			this.in_linestringtag = false;              
-		} else if (localName.equals("point")) { 
-			this.in_pointtag = false;          
 		} else if (localName.equals("coordinates")) { 
 			this.in_coordinatestag = false;
 		}
@@ -127,7 +100,6 @@ public class NavigationSaxHandler extends DefaultHandler{
 		} else if(this.in_coordinatestag){
             if (length > 30) {
                 placemark.setCoordinates(new String(ch, start, length));
-                //Log.d("NavigationSaxHandler", placemark.getCoordinates().toString());
             } else {
                 malformed.add(placemark);
             }
