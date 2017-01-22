@@ -46,6 +46,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.mapbox.mapboxsdk.MapboxAccountManager;
 import com.mapbox.mapboxsdk.annotations.Marker;
+import com.mapbox.mapboxsdk.annotations.MarkerView;
 import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -76,6 +77,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -444,7 +446,6 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             if (map != null) {
                 position = new CameraPosition.Builder()
                         .target(new LatLng(location))
-                        .zoom(20)
                         .build();
                 map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
                 displayClosestLetters(location);
@@ -738,12 +739,12 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                     if (input != null)
                         input.close();
                 } catch (IOException e) {
-                    // Ignored
+                    // ignored
                 }
                 if (conn != null)
                     conn.disconnect();
 
-                Log.d(TAG, "File was successfully downloaded.");
+                Log.d(TAG, "Letter map file was successfully downloaded.");
             }
             return null;
         }
@@ -812,6 +813,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 */
                 mParsedMarkersRaw.add(mvo);
                 mParsedMarkers.add(mvo.getMarker());
+
             }
         } catch (Exception e) {
             Log.e("parseLetterMap", e.toString());
@@ -829,18 +831,26 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
             mapFile.add(m.getTitle(), coordinates);
         }
         InputStream jsonMap = new ByteArrayInputStream(mapFile.toString().getBytes(StandardCharsets.UTF_8));
-
+        OutputStream output = null;
         try {
-            OutputStream outputFile = new FileOutputStream(getExternalFilesDir(null) + "/map.grabble");
+            output = new FileOutputStream(getExternalFilesDir(null) + "/map.grabble");
 
             byte data[] = new byte[4096];
             int count = 0;
             while (count != -1) {
-                outputFile.write(data, 0, count);
+                output.write(data, 0, count);
                 count = jsonMap.read(data);
             }
         } catch (Exception e) {
             Log.e("writeLetterMap", e.toString());
+        } finally {
+            try {
+                if (output != null)
+                    output.close();
+            } catch (IOException e) {
+                // ignored
+            }
+            Log.d("writeLetterMap", "Letter map was successfully stored.");
         }
     }
 
@@ -921,8 +931,8 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
                 Marker marker = mParsedMarkers.get(markerAtIndex);
                 markerAtIndex++;
 
-                // Distance for being able to grab a letter: 10 meters.
-                if (currentPos.distanceTo(m.getPosition()) <= 10) {
+                // Distance for being able to grab a letter: 8 meters.
+                if (currentPos.distanceTo(m.getPosition()) <= 8) {
                     if (mParsedMarkersRaw != null &&
                             !mLettersAround.contains(marker)) {
                         Log.d(TAG, "Spawning letter: " + m.getTitle()
