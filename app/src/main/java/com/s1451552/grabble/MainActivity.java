@@ -1036,7 +1036,7 @@ public class MainActivity extends RuntimePermissions implements GoogleApiClient.
         findViewById(R.id.light_words).setVisibility(View.VISIBLE);
 
         // Set up the timer and design
-        CountDownTimer ct = new CountDownTimer(10000, 1) {
+        CountDownTimer ct = new CountDownTimer(900000, 1) {
 
             public void onTick(long mil) {
                 String min = String.format(Locale.UK, "%02d", (int) mil/60000);
