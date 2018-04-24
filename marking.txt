@@ -1,0 +1,4 @@
+Total grade: 92
+--------------------------------------------
+Marks for design document: 90
+Marks for implementation + documentation: 94
